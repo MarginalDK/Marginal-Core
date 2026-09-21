@@ -43,6 +43,15 @@ define( 'MARGINAL_CORE_SUPPORT_URL', 'https://marginal.dk' );
 Each also resolves through a `marginal_core_config_<key>` filter, so a
 site-specific mu-plugin can override it programmatically.
 
+WordPress's own `WP_ENVIRONMENT_TYPE` should also be set on any site that is
+not production. Nothing detects this automatically — core defaults to
+`production` when the constant is absent — so the dashboard widget reports
+undeclared environments to Marginal users as an onboarding check.
+
+```php
+define( 'WP_ENVIRONMENT_TYPE', 'staging' );
+```
+
 ## Updates
 
 The plugin declares this repository as its `Update URI`, so each site checks

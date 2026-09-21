@@ -276,7 +276,7 @@ costs one option read:
 |---|---|
 | Search engines blocked | `blog_public` is `0` |
 | Debug output in production | `WP_DEBUG` true and environment is production |
-| Not a production environment | `wp_get_environment_type()` — rendered as a coloured strip so nobody edits staging believing it is live |
+| Declared non-production | `wp_get_environment_type()` returns `local`, `development` or `staging` — rendered as a coloured strip so nobody edits staging believing it is live |
 | Backup missing, failed, or stale | `updraft_last_backup`, against `MARGINAL_CORE_BACKUP_MAX_AGE_DAYS` (default 7) |
 
 #### Shown only to protected users
@@ -287,6 +287,27 @@ With no alerting channel, the widget is the plugin's only reporting surface:
   exposing it to the client's staff.
 - A warning when that ID is unsafe on an already-connected site — the case the
   `mainwp` module deliberately refuses to repair automatically.
+- "Environment not declared", when `WP_ENVIRONMENT_TYPE` is unset.
+
+That last row exists because `wp_get_environment_type()` detects nothing. It
+reads the `WP_ENVIRONMENT_TYPE` constant or environment variable, accepts only
+`local`, `development`, `staging` and `production`, and returns `production`
+for everything else — including when nothing is set at all. On a staging site
+where nobody configured it, the function reports production and the strip
+above never fires: a check that fails silently in the reassuring direction.
+
+The fix is not to guess. Hostname patterns like `staging.` or `dev.` would put
+a red non-production strip on the live dashboard of any client whose real site
+happens to sit at `dev.example.dk`, which is exactly the client-visible
+surprise this plugin exists to avoid. Instead the gap itself is reported, to
+the only people who can close it, and setting `WP_ENVIRONMENT_TYPE` becomes an
+onboarding step the widget audits. A hostname pattern may phrase this row as a
+hint — "looks like staging" — but never asserts anything to a client.
+
+Detection is read through a `marginal_core_detected_environment` filter, so a
+managed host's authoritative constant can be taught to it later in one line,
+without a speculative list of platforms today. Marginal's fleet is mostly
+Danish shared hosting, which sets no such constants.
 
 #### Rendering
 
@@ -356,8 +377,10 @@ most expensive.
 - The unique-ID repair decision table: connected × safe, connected × unsafe,
   disconnected × safe, disconnected × unsafe, and missing.
 - The protection decision function across actor/target/config combinations.
-- Widget warning conditions: each of the four fires when it should and stays
-  absent when it should not, and the summary line counts them correctly.
+- Widget warning conditions: each fires when it should and stays absent when
+  it should not, and the summary line counts them correctly.
+- Environment resolution: declared values, unset, an invalid value falling
+  back to production, and the filter overriding all of them.
 - Backup freshness against the age threshold, including missing option,
   failed run, and boundary ages.
 - Update handler: newer, older and equal versions; `v` prefix stripping;
@@ -398,6 +421,8 @@ Each of these is its own module and its own decision, added only when wanted:
 - `DISALLOW_FILE_MODS` with a corrected IP whitelist, opt-in per site.
 - Per-employee accounts provisioned from a central roster.
 - Danish translation.
+- Authoritative environment detection for managed hosts (Pantheon, Kinsta,
+  WP Engine), added per-host through the filter if one appears in the fleet.
 - Additional widget rows: backup status, uptime, SSL expiry.
 
 ## To verify during implementation
