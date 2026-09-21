@@ -1,0 +1,12 @@
+.git/
+.github/
+.phpunit.cache/
+tests/
+docs/
+build/
+vendor/
+composer.json
+composer.lock
+phpunit.xml
+.distignore
+.gitignore
