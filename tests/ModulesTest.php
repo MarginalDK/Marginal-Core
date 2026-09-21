@@ -45,4 +45,27 @@ final class ModulesTest extends TestCase {
 	public function test_boot_function_name_for_single_word_slug(): void {
 		$this->assertSame( 'marginal_core_widget_boot', marginal_core_boot_function( 'widget' ) );
 	}
+
+	// -- marginal_core_optional_call(): finding 1's guard against a disabled
+	// or absent module fataling the caller. --
+
+	public function test_optional_call_returns_the_fallback_when_the_function_does_not_exist(): void {
+		$this->assertSame(
+			'fallback',
+			marginal_core_optional_call( 'marginal_core_this_function_does_not_exist', 'fallback' )
+		);
+	}
+
+	public function test_optional_call_preserves_the_fallbacks_type(): void {
+		$this->assertFalse( marginal_core_optional_call( 'marginal_core_this_function_does_not_exist', false ) );
+		$this->assertSame( '', marginal_core_optional_call( 'marginal_core_this_function_does_not_exist', '' ) );
+	}
+
+	public function test_optional_call_invokes_an_existing_function_with_its_arguments(): void {
+		$this->assertSame( 3, marginal_core_optional_call( 'strlen', 0, array( 'abc' ) ) );
+	}
+
+	public function test_optional_call_passes_no_arguments_when_none_are_given(): void {
+		$this->assertSame( '', marginal_core_optional_call( 'strval', 'fallback', array( '' ) ) );
+	}
 }

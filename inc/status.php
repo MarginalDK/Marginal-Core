@@ -168,12 +168,23 @@ function marginal_core_warnings( array $facts ): array {
 
 	$connected = ! array_key_exists( 'mainwp_connected', $facts ) || ! empty( $facts['mainwp_connected'] );
 	$id_safe   = array_key_exists( 'mainwp_id_safe', $facts ) && ! empty( $facts['mainwp_id_safe'] );
+	$unique_id = isset( $facts['mainwp_unique_id'] ) ? (string) $facts['mainwp_unique_id'] : '';
 
-	if ( $connected && ! $id_safe ) {
+	// Unsafe-and-non-empty only: an empty ID is the normal, momentary state of
+	// a disconnected site between admin loads — marginal_core_mainwp_maybe_repair()
+	// clears it on the next one. Warning about that would spray a false alarm
+	// onto every fresh onboarding. A non-empty unsafe ID is different: on a
+	// connected site rewriting it would break the connection, and on a
+	// disconnected site it means the effective ID is constant-sourced (or the
+	// repair has not run yet) — either way, worth a distinct explanation of the
+	// remedy, since "connected" and "disconnected" call for different fixes.
+	if ( ! $id_safe && '' !== $unique_id ) {
 		$warnings[] = array(
 			'id'            => 'mainwp-id',
 			'level'         => 'warn',
-			'text'          => 'The MainWP security ID contains unsafe characters. Repair it at a maintenance window — changing it now would break the connection.',
+			'text'          => $connected
+				? 'The MainWP security ID contains unsafe characters. Repair it at a maintenance window — changing it now would break the connection.'
+				: 'The MainWP security ID contains unsafe characters and the site is disconnected. If it is set via MAINWP_CHILD_UNIQUEID in wp-config.php, correct it there — this plugin cannot repair a constant-sourced ID; otherwise it should self-repair on the next admin page load.',
 			'marginal_only' => true,
 		);
 	}

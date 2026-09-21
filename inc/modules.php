@@ -64,3 +64,28 @@ function marginal_core_load_modules(): void {
 		}
 	}
 }
+
+/**
+ * Call a function belonging to a module that might not be loaded, falling
+ * back instead of fataling when it is not.
+ *
+ * `MARGINAL_CORE_DISABLED_MODULES` can legitimately switch a module off —
+ * it is a documented, supported per-site knob — so any code outside that
+ * module (the widget reading `mainwp`/`user-guard` facts, say) must not call
+ * its functions directly. This is the one seam that keeps that promise: a
+ * half-extracted release, or a deliberately disabled module, degrades to a
+ * missing fact rather than a white screen.
+ *
+ * Pure given its inputs: which function names exist is part of the running
+ * process, so the same arguments always produce the same result within one
+ * request, which is what makes the fallback path unit-testable without
+ * loading any module at all.
+ *
+ * @param string  $function Fully-qualified function name to call if it exists.
+ * @param mixed   $fallback Returned unchanged when the function does not exist.
+ * @param mixed[] $args     Arguments to pass through when it does.
+ * @return mixed
+ */
+function marginal_core_optional_call( string $function, $fallback, array $args = array() ) {
+	return function_exists( $function ) ? call_user_func_array( $function, $args ) : $fallback;
+}

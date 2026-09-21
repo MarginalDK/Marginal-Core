@@ -53,6 +53,14 @@ function marginal_core_release_to_update( $release, string $current_version, str
 		return null;
 	}
 
+	// Package host allow-list: browser_download_url is otherwise trusted
+	// verbatim, and WordPress will download and unpack whatever it names over
+	// the plugin directory. Requires spoofing api.github.com over TLS to
+	// exploit, so this is defence-in-depth rather than the primary guard —
+	// but one line closes it. A matching release with no asset on an accepted
+	// host is treated the same as one with no zip asset at all: unusable.
+	$allowed_hosts = array( 'github.com', 'objects.githubusercontent.com' );
+
 	$package = '';
 	$assets  = isset( $release['assets'] ) && is_array( $release['assets'] ) ? $release['assets'] : array();
 
@@ -64,10 +72,16 @@ function marginal_core_release_to_update( $release, string $current_version, str
 		$name = isset( $asset['name'] ) && is_string( $asset['name'] ) ? $asset['name'] : '';
 		$url  = isset( $asset['browser_download_url'] ) && is_string( $asset['browser_download_url'] ) ? $asset['browser_download_url'] : '';
 
-		if ( '' !== $url && '.zip' === substr( $name, -4 ) ) {
-			$package = $url;
-			break;
+		if ( '' === $url || '.zip' !== substr( $name, -4 ) ) {
+			continue;
 		}
+
+		if ( ! in_array( parse_url( $url, PHP_URL_HOST ), $allowed_hosts, true ) ) {
+			continue;
+		}
+
+		$package = $url;
+		break;
 	}
 
 	if ( '' === $package ) {

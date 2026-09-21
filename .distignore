@@ -1,6 +1,7 @@
 .git/
 .github/
 .phpunit.cache/
+.superpowers/
 tests/
 docs/
 build/

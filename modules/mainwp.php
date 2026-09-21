@@ -60,11 +60,44 @@ function marginal_core_unique_id_action( bool $connected, $id, bool $repairable 
 }
 
 /**
- * 32 alphanumeric characters — wp_generate_password with both symbol flags
- * off returns exactly that character set.
+ * 32 alphanumeric characters. wp_generate_password() with both symbol flags
+ * off should return exactly that character set, but its result also passes
+ * through the `random_password` filter — a security or password-policy
+ * plugin commonly injects symbols there. Writing an unvalidated result would
+ * make the "repair" report success while leaving MainWP unable to connect,
+ * with nothing warning about it.
+ *
+ * The generated value is therefore checked before use, retried a bounded
+ * number of times against the same possibly-filtered source, and, if every
+ * attempt is still unsafe, built locally by
+ * marginal_core_generate_unique_id_locally() instead — a source no filter can
+ * reach.
  */
 function marginal_core_generate_unique_id(): string {
-	return wp_generate_password( 32, false, false );
+	for ( $attempt = 0; $attempt < 5; $attempt++ ) {
+		$candidate = wp_generate_password( 32, false, false );
+
+		if ( marginal_core_is_safe_unique_id( $candidate ) ) {
+			return $candidate;
+		}
+	}
+
+	return marginal_core_generate_unique_id_locally();
+}
+
+/**
+ * Last-resort fallback: 32 alphanumeric characters built without
+ * wp_generate_password(), so no `random_password` filter can reach it.
+ */
+function marginal_core_generate_unique_id_locally(): string {
+	$chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+	$id    = '';
+
+	for ( $i = 0; $i < 32; $i++ ) {
+		$id .= $chars[ random_int( 0, strlen( $chars ) - 1 ) ];
+	}
+
+	return $id;
 }
 
 function marginal_core_mainwp_is_connected(): bool {

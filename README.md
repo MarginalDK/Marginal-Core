@@ -14,7 +14,7 @@ fleet and updated centrally.
 
 | Module | Effect |
 |---|---|
-| `hardening` | Disables the dashboard file editor, XML-RPC, and the `X-Pingback` header |
+| `hardening` | Disables the dashboard file editor and XML-RPC's authenticated methods, and strips the `X-Pingback` header. `/xmlrpc.php` itself stays reachable — `pingback.ping` still answers — this only closes the authenticated-method surface (e.g. `wp.getUsersBlogs`) |
 | `rest` | Blocks unauthenticated user enumeration via the REST API |
 | `cron-fixes` | Registers the `minute` schedule MainWP expects; silences MainWP notices on multisite sub-sites |
 | `mainwp` | Regenerates the MainWP Child unique security ID when it contains symbols that break the connection — but only on a site that is not yet connected; a connected site is only flagged, never rewritten, since the dashboard would still hold the old value |

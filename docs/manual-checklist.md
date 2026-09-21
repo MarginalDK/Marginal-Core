@@ -9,8 +9,14 @@ actually running.
 - [ ] Sign in as a client administrator (not a protected login).
 - [ ] Users list: the Marginal row shows "Managed by Marginal" and has no
       Delete link.
-- [ ] Attempt bulk-delete including the Marginal user — deletion is refused
-      with the explanatory message.
+- [ ] Attempt bulk-delete including the Marginal user, with at least one
+      other (unprotected) user selected **before** it in the list —
+      `marginal_core_guard_block_delete()` calls `wp_die()` the moment it
+      reaches the protected account, mid-loop. Any unprotected user ordered
+      before it in the batch is **already deleted** by that point; the
+      explanatory message stops the loop, it does not undo what already ran.
+      Confirm that behaviour, and restore whichever unprotected user(s) got
+      deleted in the process.
 - [ ] Attempt to change the Marginal user's role — refused.
 - [ ] `DELETE /wp-json/wp/v2/users/<marginal id>?reassign=1` as that
       administrator returns a permission error, not a deletion. **This is the
@@ -42,6 +48,26 @@ actually running.
 - [ ] On a connected site with a symbol-bearing unique ID, load any admin page
       — the ID is **unchanged**, and the warning row appears for a protected
       user. This is the check that protects live connections.
+- [ ] MainWP re-add window: on a site connected with an **empty** unique ID,
+      remove it from the MainWP dashboard, then load any admin page on the
+      child. The empty ID reads as "disconnected + unsafe (empty)", so
+      `marginal_core_mainwp_maybe_repair()` writes a new 32-character ID on
+      that load. Re-adding the site in MainWP with the old (empty) value now
+      fails on a security-ID mismatch — this is expected, and the recovery is
+      to read the **current** ID from the widget (visible to a protected/
+      Marginal viewer) and use that when re-adding.
+
+## XML-RPC
+
+- [ ] With hardening active (`xmlrpc_enabled` filtered to `false`),
+      `/xmlrpc.php` still answers — it is not blocked at the endpoint level.
+      Confirm `pingback.ping` still responds (e.g. via `xmlrpc.php` with a
+      `pingback.ping` payload), and that an authenticated method such as
+      `wp.getUsersBlogs` is refused. Do not assume XML-RPC is "disabled"
+      wholesale when verifying this.
+- [ ] Confirm the MainWP connection (handshake via the unique ID and public
+      key) still works with hardening active, so a failure there is never
+      mistaken for an XML-RPC problem or vice versa.
 
 ## Branding
 

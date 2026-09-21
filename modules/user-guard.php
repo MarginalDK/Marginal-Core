@@ -97,13 +97,16 @@ function marginal_core_guard_clean_logins( array $logins ): array {
  * @return string[]
  */
 function marginal_core_protected_logins(): array {
-	$logins = marginal_core_config( 'protected_users', array( 'marginal' ) );
+	// Reuses marginal_core_parse_disabled_modules() so this splits on commas
+	// exactly like MARGINAL_CORE_DISABLED_MODULES does. Wrapping a raw,
+	// unsplit string as a single element instead — the previous behaviour —
+	// meant 'marginal,bjarke' protected a login literally named
+	// "marginal,bjarke", i.e. nobody.
+	$logins = marginal_core_parse_disabled_modules(
+		marginal_core_config( 'protected_users', array( 'marginal' ) )
+	);
 
-	if ( ! is_array( $logins ) ) {
-		$logins = array( (string) $logins );
-	}
-
-	return marginal_core_guard_clean_logins( array_map( 'strval', $logins ) );
+	return marginal_core_guard_clean_logins( $logins );
 }
 
 function marginal_core_is_protected_login( string $login ): bool {

@@ -19,6 +19,7 @@ final class StatusTest extends TestCase {
 			'environment_declared'   => true,
 			'backup'                 => array( 'state' => 'ok', 'time' => 1000 ),
 			'mainwp_connected'       => true,
+			'mainwp_unique_id'       => 'aB3xY9zQaB3xY9zQaB3xY9zQaB3xY9zQ',
 			'mainwp_id_safe'         => true,
 		);
 	}
@@ -155,12 +156,62 @@ final class StatusTest extends TestCase {
 		$this->assertContains( 'mainwp-id', array_column( marginal_core_warnings( $facts ), 'id' ) );
 	}
 
-	public function test_unsafe_id_when_disconnected_does_not_warn(): void {
+	public function test_unsafe_nonempty_id_when_disconnected_still_warns(): void {
+		// Finding 4: a disconnected site with an unsafe, non-empty ID (the
+		// constant-sourced case marginal_core_mainwp_id_is_repairable() can't
+		// fix) used to warn nowhere. It must warn regardless of connection
+		// state — only the wording changes.
 		$facts = $this->healthy_facts();
 		$facts['mainwp_connected'] = false;
+		$facts['mainwp_unique_id'] = 'bad&id';
+		$facts['mainwp_id_safe']   = false;
+
+		$this->assertContains( 'mainwp-id', array_column( marginal_core_warnings( $facts ), 'id' ) );
+	}
+
+	public function test_empty_id_when_disconnected_does_not_warn(): void {
+		// The momentary, normal state of a disconnected site between admin
+		// loads: marginal_core_mainwp_maybe_repair() clears an empty ID on the
+		// next one. Warning about it would false-alarm every fresh onboarding.
+		$facts = $this->healthy_facts();
+		$facts['mainwp_connected'] = false;
+		$facts['mainwp_unique_id'] = '';
 		$facts['mainwp_id_safe']   = false;
 
 		$this->assertNotContains( 'mainwp-id', array_column( marginal_core_warnings( $facts ), 'id' ) );
+	}
+
+	public function test_mainwp_id_warning_text_differs_when_disconnected(): void {
+		$connected_facts = $this->healthy_facts();
+		$connected_facts['mainwp_unique_id'] = 'bad&id';
+		$connected_facts['mainwp_id_safe']   = false;
+
+		$disconnected_facts = $this->healthy_facts();
+		$disconnected_facts['mainwp_connected'] = false;
+		$disconnected_facts['mainwp_unique_id'] = 'bad&id';
+		$disconnected_facts['mainwp_id_safe']   = false;
+
+		$connected_warning    = $this->find_warning( marginal_core_warnings( $connected_facts ), 'mainwp-id' );
+		$disconnected_warning = $this->find_warning( marginal_core_warnings( $disconnected_facts ), 'mainwp-id' );
+
+		$this->assertNotNull( $connected_warning );
+		$this->assertNotNull( $disconnected_warning );
+		$this->assertNotSame( $connected_warning['text'], $disconnected_warning['text'] );
+		$this->assertStringContainsString( 'disconnected', $disconnected_warning['text'] );
+	}
+
+	/**
+	 * @param array<int,array<string,mixed>> $warnings
+	 * @return array<string,mixed>|null
+	 */
+	private function find_warning( array $warnings, string $id ): ?array {
+		foreach ( $warnings as $warning ) {
+			if ( $id === $warning['id'] ) {
+				return $warning;
+			}
+		}
+
+		return null;
 	}
 
 	public function test_healthy_site_has_no_warnings(): void {
@@ -213,12 +264,22 @@ final class StatusTest extends TestCase {
 		}
 	}
 
-	public function test_unsafe_id_on_a_disconnected_site_does_not_warn(): void {
+	public function test_unsafe_id_on_a_disconnected_site_warns_marginal_only(): void {
 		$facts = $this->healthy_facts();
 		$facts['mainwp_connected'] = false;
+		$facts['mainwp_unique_id'] = 'bad&id';
 		$facts['mainwp_id_safe']   = false;
 
-		$this->assertNotContains( 'mainwp-id', array_column( marginal_core_warnings( $facts ), 'id' ) );
+		$warnings = marginal_core_warnings( $facts );
+		$ids      = array_column( $warnings, 'id' );
+
+		$this->assertContains( 'mainwp-id', $ids );
+
+		foreach ( $warnings as $warning ) {
+			if ( 'mainwp-id' === $warning['id'] ) {
+				$this->assertTrue( $warning['marginal_only'] );
+			}
+		}
 	}
 
 	public function test_undeclared_environment_warns_marginal_only(): void {

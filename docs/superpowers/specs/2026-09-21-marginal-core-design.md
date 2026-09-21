@@ -61,6 +61,8 @@ marginal-core/
   marginal-core.php          bootstrap: header, guard, config, module loader
   inc/
     config.php               constant + filter accessor, safe defaults
+    modules.php              module manifest and loader
+    status.php               pure widget facts/warnings, unit-tested apart from rendering
     updater.php              GitHub release update channel
   modules/
     hardening.php
@@ -74,8 +76,10 @@ marginal-core/
   .github/workflows/release.yml
 ```
 
-Namespace `Marginal\Core`; anything necessarily global is prefixed
-`marginal_core_`.
+No namespace, as built: every function is declared at global scope, prefixed
+`marginal_core_`. Plain functions only — no classes, no autoloading — which is
+also what lets a module file be required directly from a test without
+WordPress loaded.
 
 ### Bootstrap
 
@@ -215,10 +219,20 @@ the admin UI and the REST API:
 
 - `map_meta_cap` denies `delete_user`, `edit_user`, `promote_user` and
   `remove_user` when the target is protected and the actor is someone else.
-- Multisite equivalents `remove_user_from_blog` and `wpmu_delete_user` covered.
+  `remove_user` is the meta cap WordPress's Users-screen "Remove" action maps
+  to on multisite, so that path is covered; a direct call to
+  `remove_user_from_blog()` bypassing capability checks is not — the same
+  documented limitation as `$user->set_role()` below.
+- `delete_user` and `wpmu_delete_user` actions carry a last-resort backstop,
+  `marginal_core_guard_block_delete()`, which `wp_die()`s the moment it is
+  called for a protected account.
 - The Users-list row loses its Delete action and gains a "Managed by Marginal"
   label — visible and explained, not hidden.
-- Bulk delete excludes protected users.
+- Bulk delete does **not** exclude protected users from the batch; it dies at
+  the backstop above the moment it reaches one. Any unprotected user ordered
+  before the protected one in the same batch is deleted before the loop
+  stops. This is a known sharp edge, not a design goal — see
+  `docs/manual-checklist.md`.
 - WP-CLI bypasses the guard entirely, as the escape hatch.
 
 The decision itself is extracted as a pure function — actor, target, config in;

@@ -186,6 +186,20 @@ final class UserGuardTest extends TestCase {
 		$this->assertSame( 'marginal', marginal_core_guard_fold( 'MARGINAL' ) );
 	}
 
+	// -- marginal_core_protected_logins(): finding 7, comma-string parity ---
+	// with MARGINAL_CORE_DISABLED_MODULES. Uses the real constant: nothing
+	// earlier in the suite touches marginal_core_protected_logins() or reads
+	// MARGINAL_CORE_PROTECTED_USERS, and PHP constants are process-wide, so
+	// this must stay the last test to rely on its default.
+
+	public function test_protected_users_comma_string_splits_into_multiple_logins(): void {
+		define( 'MARGINAL_CORE_PROTECTED_USERS', 'marginal,bjarke' );
+
+		$this->assertSame( array( 'marginal', 'bjarke' ), marginal_core_protected_logins() );
+		$this->assertTrue( marginal_core_is_protected_login( 'bjarke' ) );
+		$this->assertFalse( marginal_core_is_protected_login( 'marginal,bjarke' ) );
+	}
+
 	// -- marginal_core_guard_clean_logins(): "0" is a valid login -----------
 
 	public function test_clean_logins_keeps_the_literal_string_zero(): void {

@@ -108,6 +108,43 @@ final class UpdaterTest extends TestCase {
 		$this->assertNull( marginal_core_release_to_update( $release, '1.0.0', 'p/p.php', 'p' ) );
 	}
 
+	// -- Finding 6: the package URL host must be GitHub's own. --
+
+	public function test_package_on_a_foreign_host_is_rejected(): void {
+		$release = $this->release();
+		$release['assets'][0]['browser_download_url'] = 'https://evil.example/payload.zip';
+
+		$this->assertNull( marginal_core_release_to_update( $release, '1.0.0', 'p/p.php', 'p' ) );
+	}
+
+	public function test_package_on_a_lookalike_host_is_rejected(): void {
+		$release = $this->release();
+		// Not github.com: a naive substring or suffix check would accept this.
+		$release['assets'][0]['browser_download_url'] = 'https://github.com.evil.example/payload.zip';
+
+		$this->assertNull( marginal_core_release_to_update( $release, '1.0.0', 'p/p.php', 'p' ) );
+	}
+
+	public function test_package_on_github_com_is_accepted(): void {
+		$release = $this->release();
+		$release['assets'][0]['browser_download_url'] = 'https://github.com/MarginalDK/Marginal-Core/releases/download/v1.1.0/marginal-core-1.1.0.zip';
+
+		$update = marginal_core_release_to_update( $release, '1.0.0', 'p/p.php', 'p' );
+
+		$this->assertIsArray( $update );
+		$this->assertSame( $release['assets'][0]['browser_download_url'], $update['package'] );
+	}
+
+	public function test_package_on_objects_githubusercontent_com_is_accepted(): void {
+		$release = $this->release();
+		$release['assets'][0]['browser_download_url'] = 'https://objects.githubusercontent.com/github-production-release-asset/1/abc.zip';
+
+		$update = marginal_core_release_to_update( $release, '1.0.0', 'p/p.php', 'p' );
+
+		$this->assertIsArray( $update );
+		$this->assertSame( $release['assets'][0]['browser_download_url'], $update['package'] );
+	}
+
 	// -- Finding 1: network, caching and hijack-guard paths. --
 
 	public function test_uncached_transient_triggers_a_request(): void {

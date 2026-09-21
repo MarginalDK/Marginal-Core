@@ -14,14 +14,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify tag matches the plugin header
+      - name: Verify tag matches the plugin header and MARGINAL_CORE_VERSION
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           HEADER=$(grep -m1 '^ \* Version:' marginal-core.php | awk '{print $3}')
+          CONST=$(grep -m1 "define( 'MARGINAL_CORE_VERSION'," marginal-core.php | sed -E "s/.*'MARGINAL_CORE_VERSION', '([^']+)'.*/\1/")
           if [ "$VERSION" != "$HEADER" ]; then
             echo "Tag $GITHUB_REF_NAME does not match plugin header version $HEADER"
             exit 1
           fi
+          if [ "$VERSION" != "$CONST" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match MARGINAL_CORE_VERSION $CONST"
+            exit 1
+          fi
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Run the test suite
+        run: |
+          composer install --no-progress --prefer-dist
+          composer test
 
       - name: Build plugin zip
         run: |

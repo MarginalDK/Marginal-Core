@@ -28,7 +28,15 @@ function marginal_core_facts(): array {
 	$declared = ( defined( 'WP_ENVIRONMENT_TYPE' ) && WP_ENVIRONMENT_TYPE )
 		|| ( false !== getenv( 'WP_ENVIRONMENT_TYPE' ) && '' !== getenv( 'WP_ENVIRONMENT_TYPE' ) );
 
-	$unique_id = marginal_core_mainwp_unique_id();
+	// mainwp and user-guard are both optional modules — MARGINAL_CORE_DISABLED_MODULES
+	// can switch either off, and a half-extracted release can be missing the
+	// file outright. Every call into them is therefore routed through
+	// marginal_core_optional_call() so a disabled or absent module degrades
+	// this one fact rather than white-screening the dashboard for everyone.
+	// The keys stay present either way: marginal_core_warnings() treats an
+	// absent key as fail-loud, so dropping one would spray warnings instead
+	// of fixing anything.
+	$unique_id = marginal_core_optional_call( 'marginal_core_mainwp_unique_id', '' );
 	$user      = wp_get_current_user();
 
 	return array(
@@ -41,9 +49,9 @@ function marginal_core_facts(): array {
 			(int) marginal_core_config( 'backup_max_age_days', 7 ),
 			time()
 		),
-		'mainwp_connected'       => marginal_core_mainwp_is_connected(),
+		'mainwp_connected'       => marginal_core_optional_call( 'marginal_core_mainwp_is_connected', false ),
 		'mainwp_unique_id'       => $unique_id,
-		'mainwp_id_safe'         => marginal_core_is_safe_unique_id( $unique_id ),
+		'mainwp_id_safe'         => marginal_core_optional_call( 'marginal_core_is_safe_unique_id', false, array( $unique_id ) ),
 		'patchstack'             => marginal_core_patchstack_state(
 			class_exists( 'P_Core' ),
 			get_option( 'patchstack_license_activated', 0 ),
@@ -52,7 +60,7 @@ function marginal_core_facts(): array {
 		),
 		'object_cache'           => function_exists( 'wp_using_ext_object_cache' ) && wp_using_ext_object_cache(),
 		'php_version'            => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
-		'is_marginal_viewer'     => $user && marginal_core_is_protected_login( (string) $user->user_login ),
+		'is_marginal_viewer'     => $user && marginal_core_optional_call( 'marginal_core_is_protected_login', false, array( (string) $user->user_login ) ),
 	);
 }
 
@@ -187,6 +195,16 @@ function marginal_core_widget_render(): void {
 }
 
 function marginal_core_widget_setup(): void {
+	// wp_dashboard_setup fires for anyone with `read`, not only
+	// administrators. Without this the panel — MainWP connection state,
+	// backup freshness and failure reason, PHP version, and alerts including
+	// "Debug mode is on in production" — renders for an editor or shop
+	// manager too, and the three core widgets this removes vanish from under
+	// them as well.
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
 	remove_meta_box( 'dashboard_primary', 'dashboard', 'side' );
 	remove_meta_box( 'dashboard_quick_press', 'dashboard', 'side' );
 	remove_meta_box( 'dashboard_site_health', 'dashboard', 'normal' );

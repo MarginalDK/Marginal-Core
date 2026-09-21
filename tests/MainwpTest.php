@@ -9,6 +9,7 @@ final class MainwpTest extends TestCase {
 	protected function setUp(): void {
 		marginal_core_test_reset_hooks();
 		$GLOBALS['marginal_core_options'] = array();
+		$GLOBALS['marginal_core_test_wp_generate_password_override'] = null;
 	}
 
 	public function test_alphanumeric_id_is_safe(): void {
@@ -81,6 +82,38 @@ final class MainwpTest extends TestCase {
 			$this->assertSame( 32, strlen( $id ) );
 			$this->assertTrue( marginal_core_is_safe_unique_id( $id ) );
 		}
+	}
+
+	// -- Finding 5: a filtered wp_generate_password() must not produce an
+	// unvalidated, unsafe ID. --
+
+	public function test_generate_unique_id_is_safe_even_when_wp_generate_password_is_filtered_unsafe(): void {
+		// Simulates a `random_password` filter — from a security or
+		// password-policy plugin — injecting symbols into every call.
+		$GLOBALS['marginal_core_test_wp_generate_password_override'] = 'bad&id!!bad&id!!bad&id!!bad&id!';
+
+		$id = marginal_core_generate_unique_id();
+
+		$this->assertTrue( marginal_core_is_safe_unique_id( $id ) );
+		$this->assertSame( 32, strlen( $id ) );
+	}
+
+	public function test_generate_unique_id_locally_produces_a_safe_32_character_id(): void {
+		for ( $i = 0; $i < 20; $i++ ) {
+			$id = marginal_core_generate_unique_id_locally();
+
+			$this->assertSame( 32, strlen( $id ) );
+			$this->assertTrue( marginal_core_is_safe_unique_id( $id ) );
+		}
+	}
+
+	public function test_repair_writes_a_safe_id_even_when_wp_generate_password_is_filtered_unsafe(): void {
+		$GLOBALS['marginal_core_options'][ MARGINAL_CORE_MAINWP_ID_OPTION ] = 'bad&id';
+		$GLOBALS['marginal_core_test_wp_generate_password_override']       = 'still&unsafe';
+
+		marginal_core_mainwp_maybe_repair();
+
+		$this->assertTrue( marginal_core_is_safe_unique_id( get_option( MARGINAL_CORE_MAINWP_ID_OPTION ) ) );
 	}
 
 	public function test_repair_writes_a_safe_id_when_disconnected(): void {
