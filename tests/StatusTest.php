@@ -84,6 +84,85 @@ final class StatusTest extends TestCase {
 		$this->assertSame( 99 * self::DAY, marginal_core_backup_status( $backup, 7, 100 * self::DAY )['time'] );
 	}
 
+	public function test_success_false_string_with_recent_backup_reports_failed(): void {
+		$backup = array( 'backup_time' => 99 * self::DAY, 'success' => 'false' );
+
+		$this->assertSame( 'failed', marginal_core_backup_status( $backup, 7, 100 * self::DAY )['state'] );
+	}
+
+	public function test_success_null_with_recent_backup_reports_unknown(): void {
+		$backup = array( 'backup_time' => 99 * self::DAY, 'success' => null );
+
+		$this->assertSame( 'unknown', marginal_core_backup_status( $backup, 7, 100 * self::DAY )['state'] );
+	}
+
+	public function test_success_key_absent_with_recent_backup_reports_unknown(): void {
+		$backup = array( 'backup_time' => 99 * self::DAY );
+
+		$this->assertSame( 'unknown', marginal_core_backup_status( $backup, 7, 100 * self::DAY )['state'] );
+	}
+
+	public function test_success_true_boolean_with_recent_backup_reports_ok(): void {
+		$backup = array( 'backup_time' => 99 * self::DAY, 'success' => true );
+
+		$this->assertSame( 'ok', marginal_core_backup_status( $backup, 7, 100 * self::DAY )['state'] );
+	}
+
+	public function test_success_string_1_with_recent_backup_reports_ok(): void {
+		$backup = array( 'backup_time' => 99 * self::DAY, 'success' => '1' );
+
+		$this->assertSame( 'ok', marginal_core_backup_status( $backup, 7, 100 * self::DAY )['state'] );
+	}
+
+	public function test_backup_time_one_second_in_future_reports_invalid(): void {
+		$backup = array( 'backup_time' => 100 * self::DAY + 1, 'success' => 1 );
+
+		$this->assertSame( 'invalid', marginal_core_backup_status( $backup, 7, 100 * self::DAY )['state'] );
+	}
+
+	public function test_backup_time_far_in_future_reports_invalid(): void {
+		$backup = array( 'backup_time' => 200 * self::DAY, 'success' => 1 );
+
+		$this->assertSame( 'invalid', marginal_core_backup_status( $backup, 7, 100 * self::DAY )['state'] );
+	}
+
+	public function test_failed_backup_produces_warning(): void {
+		$facts = $this->healthy_facts();
+		$facts['backup'] = array( 'state' => 'failed', 'time' => 1000 );
+
+		$this->assertContains( 'backup', array_column( marginal_core_warnings( $facts ), 'id' ) );
+	}
+
+	public function test_unknown_backup_produces_warning(): void {
+		$facts = $this->healthy_facts();
+		$facts['backup'] = array( 'state' => 'unknown', 'time' => 1000 );
+
+		$this->assertContains( 'backup', array_column( marginal_core_warnings( $facts ), 'id' ) );
+	}
+
+	public function test_invalid_backup_produces_warning(): void {
+		$facts = $this->healthy_facts();
+		$facts['backup'] = array( 'state' => 'invalid', 'time' => 1000 );
+
+		$this->assertContains( 'backup', array_column( marginal_core_warnings( $facts ), 'id' ) );
+	}
+
+	public function test_unsafe_id_with_no_mainwp_connected_key_warns(): void {
+		$facts = $this->healthy_facts();
+		unset( $facts['mainwp_connected'] );
+		$facts['mainwp_id_safe'] = false;
+
+		$this->assertContains( 'mainwp-id', array_column( marginal_core_warnings( $facts ), 'id' ) );
+	}
+
+	public function test_unsafe_id_when_disconnected_does_not_warn(): void {
+		$facts = $this->healthy_facts();
+		$facts['mainwp_connected'] = false;
+		$facts['mainwp_id_safe']   = false;
+
+		$this->assertNotContains( 'mainwp-id', array_column( marginal_core_warnings( $facts ), 'id' ) );
+	}
+
 	public function test_healthy_site_has_no_warnings(): void {
 		$this->assertSame( array(), marginal_core_warnings( $this->healthy_facts() ) );
 	}

@@ -37,6 +37,11 @@ function marginal_core_normalize_environment( $raw ): string {
  *
  * Pure. $now is injected so freshness is testable at the boundary.
  *
+ * 'ok' requires positively confirming success. UpdraftPlus writes `success`
+ * as 1 or 0, but through an `updraftplus_save_last_backup` filter, so the
+ * shape is not ours to rely on — and every unrecognised shape must land on
+ * the loud side, never on "fine".
+ *
  * @param mixed $last_backup
  * @return array{state: string, time: int|null}
  */
@@ -47,14 +52,25 @@ function marginal_core_backup_status( $last_backup, int $max_age_days, int $now 
 
 	$time = (int) $last_backup['backup_time'];
 
-	if ( isset( $last_backup['success'] ) && ! $last_backup['success'] ) {
+	// A record dated in the future is evidence of nothing. Left alone it
+	// would read as permanently fresh, because a negative age can never
+	// exceed the threshold.
+	if ( $time > $now ) {
+		return array( 'state' => 'invalid', 'time' => $time );
+	}
+
+	if ( ! array_key_exists( 'success', $last_backup ) || null === $last_backup['success'] ) {
+		return array( 'state' => 'unknown', 'time' => $time );
+	}
+
+	$success = $last_backup['success'];
+
+	if ( 1 !== $success && '1' !== $success && true !== $success ) {
 		return array( 'state' => 'failed', 'time' => $time );
 	}
 
-	$age = $now - $time;
-
 	return array(
-		'state' => $age > ( $max_age_days * MARGINAL_CORE_DAY ) ? 'stale' : 'ok',
+		'state' => ( $now - $time ) > ( $max_age_days * MARGINAL_CORE_DAY ) ? 'stale' : 'ok',
 		'time'  => $time,
 	);
 }
@@ -107,6 +123,8 @@ function marginal_core_warnings( array $facts ): array {
 			'missing' => 'No backups have been recorded for this site.',
 			'failed'  => 'The most recent backup did not complete.',
 			'stale'   => 'The most recent backup is older than expected.',
+			'unknown' => 'The most recent backup did not record whether it succeeded.',
+			'invalid' => 'The most recent backup is dated in the future, so its age cannot be trusted.',
 		);
 
 		$warnings[] = array(
@@ -117,7 +135,10 @@ function marginal_core_warnings( array $facts ): array {
 		);
 	}
 
-	if ( ! empty( $facts['mainwp_connected'] ) && empty( $facts['mainwp_id_safe'] ) ) {
+	$connected = ! array_key_exists( 'mainwp_connected', $facts ) || ! empty( $facts['mainwp_connected'] );
+	$id_safe   = array_key_exists( 'mainwp_id_safe', $facts ) && ! empty( $facts['mainwp_id_safe'] );
+
+	if ( $connected && ! $id_safe ) {
 		$warnings[] = array(
 			'id'            => 'mainwp-id',
 			'level'         => 'warn',
