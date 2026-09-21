@@ -123,6 +123,7 @@ Every knob is an optional constant with a safe default:
 | `MARGINAL_CORE_PROTECTED_USERS` | `['marginal']` | Logins to guard. |
 | `MARGINAL_CORE_PROTECTION` | `true` | Master switch for `user-guard`. |
 | `MARGINAL_CORE_SUPPORT_URL` | `https://marginal.dk` | Widget and footer link. |
+| `MARGINAL_CORE_BACKUP_MAX_AGE_DAYS` | `7` | Age at which the backup row warns. |
 
 Read through one accessor, which also exposes each value as a filter so a
 site-specific mu-plugin can override it programmatically:
@@ -236,19 +237,65 @@ a hand-created account it only creates a lockout risk.
 Replaces WordPress's default dashboard clutter with one Marginal panel.
 Removed: `dashboard_primary`, `dashboard_quick_press`, `dashboard_site_health`.
 
-The panel reports, at minimum: Patchstack firewall status, MainWP connection
-state (from the public-key option), and PHP version — plus a support call to
-action linking to `MARGINAL_CORE_SUPPORT_URL`. It is designed to grow; new rows
-are the expected way this plugin gains client-visible value.
+Two principles govern what goes in it, both learned from the predecessor:
 
-With no alerting channel, the widget is also the plugin's only reporting
-surface. Two rows are therefore visible **only** to logged-in users listed in
-`MARGINAL_CORE_PROTECTED_USERS`: the MainWP unique security ID, and a warning
-when that ID is unsafe on an already-connected site. Clients see the status
-panel; we see the maintenance detail behind the same widget.
+**Warnings appear only when something is wrong.** A row reading "Search
+engines: visible" every day becomes wallpaper and stops being read. Rendering
+it only when the site is set to noindex makes its presence the alarm, and
+keeps the panel short enough to scan on a healthy site.
+
+**Every claim is derived from a check, never asserted in prose.** The
+predecessor tells the client their site is "monitored, hardened, and backed
+up"; two of those are verified by badges above the sentence and the third is
+not checked at all. A static reassurance about backups on the dashboard of a
+site that has none is the kind of thing that matters precisely once, badly.
+
+Audience splits in two, and only two: WordPress can distinguish users listed
+in `MARGINAL_CORE_PROTECTED_USERS` from everyone else. Colleagues sign in as
+the Marginal account, so they see what we see; client staff are administrators
+and see the client view.
+
+#### Always shown
+
+- A one-line summary at the top — "Everything looks good", or "2 items need
+  attention" — so the panel answers its own question before any row is read.
+- Patchstack firewall status.
+- MainWP connection state, from the public-key option.
+- Backups, from UpdraftPlus: the date of the last successful run, not merely
+  whether the plugin exists.
+- Object or page cache in use.
+- PHP version, as a plain version string.
+- Support call to action, linking to `MARGINAL_CORE_SUPPORT_URL`.
+
+#### Shown only when wrong
+
+Each is a real incident that otherwise stays invisible for months, and each
+costs one option read:
+
+| Condition | Check |
+|---|---|
+| Search engines blocked | `blog_public` is `0` |
+| Debug output in production | `WP_DEBUG` true and environment is production |
+| Not a production environment | `wp_get_environment_type()` — rendered as a coloured strip so nobody edits staging believing it is live |
+| Backup missing, failed, or stale | `updraft_last_backup`, against `MARGINAL_CORE_BACKUP_MAX_AGE_DAYS` (default 7) |
+
+#### Shown only to protected users
+
+With no alerting channel, the widget is the plugin's only reporting surface:
+
+- The MainWP unique security ID, so onboarding is copy-paste for us without
+  exposing it to the client's staff.
+- A warning when that ID is unsafe on an already-connected site — the case the
+  `mainwp` module deliberately refuses to repair automatically.
+
+#### Rendering
+
+No network calls, no uncached queries. Every value above is a constant, a
+function call, or a single option read, because this renders on every
+dashboard load across the whole fleet.
 
 Styles stay inline. At this size an enqueued stylesheet is an extra request for
-no benefit, and the widget renders only for logged-in admins.
+no benefit, and the widget renders only for logged-in administrators.
 
 ### `white-label`
 
@@ -309,6 +356,10 @@ most expensive.
 - The unique-ID repair decision table: connected × safe, connected × unsafe,
   disconnected × safe, disconnected × unsafe, and missing.
 - The protection decision function across actor/target/config combinations.
+- Widget warning conditions: each of the four fires when it should and stays
+  absent when it should not, and the summary line counts them correctly.
+- Backup freshness against the age threshold, including missing option,
+  failed run, and boundary ages.
 - Update handler: newer, older and equal versions; `v` prefix stripping;
   and each degradation path — HTTP error, rate limit, malformed JSON,
   release with no zip asset — returning the input unchanged.
@@ -358,6 +409,8 @@ changing a detail above:
 - MainWP Child option names for the unique ID and the public key.
 - Whether `MAINWP_CHILD_VERSION` is defined by current MainWP Child.
 - Patchstack detection: which constant, class or option is authoritative.
+- UpdraftPlus's `updraft_last_backup` option shape — the timestamp and
+  success keys the backup row depends on.
 - That MainWP's one-click login path is unaffected by `user-guard`.
 - That `update_plugins_github.com` fires as expected on the staging site,
   and that the MainWP child reports the resulting update to Bastion. This
