@@ -196,6 +196,14 @@ if ( ! function_exists( 'wp_generate_password' ) ) {
 	}
 }
 
+$GLOBALS['marginal_core_users'] = array();
+
+if ( ! function_exists( 'get_userdata' ) ) {
+	function get_userdata( int $id ) {
+		return $GLOBALS['marginal_core_users'][ $id ] ?? false;
+	}
+}
+
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/modules.php';
@@ -204,3 +212,4 @@ require_once __DIR__ . '/../modules/hardening.php';
 require_once __DIR__ . '/../modules/rest.php';
 require_once __DIR__ . '/../modules/cron-fixes.php';
 require_once __DIR__ . '/../modules/mainwp.php';
+require_once __DIR__ . '/../modules/user-guard.php';
