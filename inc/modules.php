@@ -18,7 +18,8 @@ if ( ! defined( 'ABSPATH' ) && ! defined( 'MARGINAL_CORE_TESTS' ) ) {
  */
 function marginal_core_modules(): array {
 	return array(
-		// Modules are appended here as they are implemented.
+		'hardening' => 'hardening.php',
+		'rest'      => 'rest.php',
 	);
 }
 

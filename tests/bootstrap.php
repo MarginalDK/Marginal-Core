@@ -88,7 +88,62 @@ if ( ! function_exists( 'set_site_transient' ) ) {
 	}
 }
 
+$GLOBALS['marginal_core_hooks']     = array();
+$GLOBALS['marginal_core_logged_in'] = false;
+
+if ( ! function_exists( 'add_filter' ) ) {
+	function add_filter( string $hook, $callback, int $priority = 10, int $accepted_args = 1 ): bool {
+		$GLOBALS['marginal_core_hooks'][] = array(
+			'hook'     => $hook,
+			'callback' => $callback,
+			'priority' => $priority,
+			'args'     => $accepted_args,
+		);
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'add_action' ) ) {
+	function add_action( string $hook, $callback, int $priority = 10, int $accepted_args = 1 ): bool {
+		return add_filter( $hook, $callback, $priority, $accepted_args );
+	}
+}
+
+if ( ! function_exists( 'is_user_logged_in' ) ) {
+	function is_user_logged_in(): bool {
+		return (bool) $GLOBALS['marginal_core_logged_in'];
+	}
+}
+
+/**
+ * Callbacks registered against one hook, in registration order.
+ *
+ * @return array<int,mixed>
+ */
+function marginal_core_test_hooks( string $hook ): array {
+	return array_values(
+		array_map(
+			static function ( array $row ) {
+				return $row['callback'];
+			},
+			array_filter(
+				$GLOBALS['marginal_core_hooks'],
+				static function ( array $row ) use ( $hook ) {
+					return $row['hook'] === $hook;
+				}
+			)
+		)
+	);
+}
+
+function marginal_core_test_reset_hooks(): void {
+	$GLOBALS['marginal_core_hooks'] = array();
+}
+
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/modules.php';
 require_once __DIR__ . '/../inc/updater.php';
+require_once __DIR__ . '/../modules/hardening.php';
+require_once __DIR__ . '/../modules/rest.php';
