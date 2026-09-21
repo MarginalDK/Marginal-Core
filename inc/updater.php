@@ -61,8 +61,8 @@ function marginal_core_release_to_update( $release, string $current_version, str
 			continue;
 		}
 
-		$name = isset( $asset['name'] ) ? (string) $asset['name'] : '';
-		$url  = isset( $asset['browser_download_url'] ) ? (string) $asset['browser_download_url'] : '';
+		$name = isset( $asset['name'] ) && is_string( $asset['name'] ) ? $asset['name'] : '';
+		$url  = isset( $asset['browser_download_url'] ) && is_string( $asset['browser_download_url'] ) ? $asset['browser_download_url'] : '';
 
 		if ( '' !== $url && '.zip' === substr( $name, -4 ) ) {
 			$package = $url;
@@ -79,7 +79,7 @@ function marginal_core_release_to_update( $release, string $current_version, str
 		'slug'    => $slug,
 		'plugin'  => $plugin_file,
 		'version' => $version,
-		'url'     => isset( $release['html_url'] ) ? (string) $release['html_url'] : MARGINAL_CORE_RELEASE_PAGE,
+		'url'     => isset( $release['html_url'] ) && is_string( $release['html_url'] ) ? $release['html_url'] : MARGINAL_CORE_RELEASE_PAGE,
 		'package' => $package,
 	);
 }
