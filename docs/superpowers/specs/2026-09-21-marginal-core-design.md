@@ -15,11 +15,10 @@ Three problems, in the order they hurt:
 
 1. **MainWP child connections break** when the child's unique security ID
    contains symbols.
-2. **Every site needs the same baseline** — hardening, cron fixes, branding —
-   and today that baseline is copy-pasted, so it drifts.
-3. **Nothing tells us when a site stops conforming.** A deactivated plugin or a
-   deleted agency account is discovered when we next need it, not when it
-   happens.
+2. **The same baseline is copy-pasted onto every site** — hardening, cron
+   fixes, branding — so it drifts, and fixing one site fixes only that site.
+3. **Agency access is deletable.** A client admin can remove the account we
+   use to reach the site, and nothing prevents it.
 
 ## Constraints
 
@@ -40,8 +39,8 @@ Three problems, in the order they hurt:
 | Public repository | GitHub-driven updates then need no credentials anywhere. A private repo would put a GitHub token on every client site, which is a token to treat as public. The plugin carries conventions, not secrets — all per-site configuration is `wp-config.php` constants — so readability costs nothing we rely on. |
 | No user provisioning | Circular: installing the plugin requires admin access, which requires the account to already exist. The plugin protects an account it did not create. |
 | No `DISALLOW_FILE_MODS` / IP whitelisting in v1 | Most intrusive feature in the predecessor, fights MainWP's own updates, and fails silently — a site that refuses updates looks identical to a healthy one. Backlogged as opt-in. |
-| Conservative unique-ID repair | Regenerating a *working* ID breaks the connection, because the dashboard holds the old value. Repair only before first connection; alert otherwise. |
-| Email-only reporting | No new infrastructure, no auth surface, no dashboard-side consumer to build. Accepted limitation documented under Alerts. |
+| Conservative unique-ID repair | Regenerating a *working* ID breaks the connection, because the dashboard holds the old value. Repair only before first connection; flag it in the widget otherwise. |
+| No reporting of any kind | Patchstack and MainWP already alert us: MainWP reports plugin status and connection loss per site, Patchstack covers the security side. A second channel would duplicate both and add a cron event, two options and an outbound mail path to every client site. Anything this plugin knows and MainWP does not is surfaced passively in the dashboard widget. |
 | Module loading is never context-conditional | Every enabled module loads on every request type. Conditional `require` was considered and rejected: `REST_REQUEST` is not defined at plugin-load time, so a REST request is indistinguishable from a public page view, and the user-protection module would be skipped on exactly the path that can delete users. Under opcache seven small requires cost microseconds; the real cost is hooks firing, which each module gates internally. |
 
 ## Non-goals
@@ -62,8 +61,6 @@ marginal-core/
   marginal-core.php          bootstrap: header, guard, config, module loader
   inc/
     config.php               constant + filter accessor, safe defaults
-    request.php              Cloudflare-aware client IP
-    alerts.php               deduped wp_mail wrapper
     updater.php              GitHub release update channel
   modules/
     hardening.php
@@ -123,7 +120,6 @@ Every knob is an optional constant with a safe default:
 | Constant | Default | Effect |
 |---|---|---|
 | `MARGINAL_CORE_DISABLED_MODULES` | `''` | Comma-separated slugs to skip. |
-| `MARGINAL_CORE_ALERT_EMAIL` | `alerts@marginal.dk` | Destination for alerts. |
 | `MARGINAL_CORE_PROTECTED_USERS` | `['marginal']` | Logins to guard. |
 | `MARGINAL_CORE_PROTECTION` | `true` | Master switch for `user-guard`. |
 | `MARGINAL_CORE_SUPPORT_URL` | `https://marginal.dk` | Widget and footer link. |
@@ -154,10 +150,9 @@ confirmed acceptable: no client uses Jetpack or the mobile app.
 `DISALLOW_FILE_MODS` and the IP-whitelist machinery are **removed**. The
 predecessor's `marginal_get_request_ip()` trusted `HTTP_CF_CONNECTING_IP`
 unconditionally while listing `127.0.0.1` as allowed, so any request could
-spoof its way past the check. `inc/request.php` retains a corrected IP
-helper, used by the `tamper_blocked` alert to record where a blocked
-attempt came from: `CF-Connecting-IP` is trusted solely when `REMOTE_ADDR`
-falls within Cloudflare's published ranges, and `REMOTE_ADDR` alone otherwise.
+spoof its way past the check. With the feature gone, no IP detection remains
+anywhere in the plugin — which removes the predecessor's single worst piece of
+code rather than carrying a corrected version of it for no consumer.
 
 ### `rest`
 
@@ -186,17 +181,21 @@ Safe IDs are 32 characters of `[A-Za-z0-9]`, generated with
 `wp_generate_password( 32, false, false )` and validated against
 `/^[A-Za-z0-9]{8,64}$/`.
 
-Evaluated once daily on the plugin's cron event:
+Evaluated on activation, and on `admin_init` while the site is not yet
+connected — throttled by a short transient, and skipped entirely once a public
+key exists. A connected site therefore does one option read and nothing else,
+forever. There is no cron event.
 
 - **Not yet connected** and the ID is missing or unsafe → write a safe ID
   immediately. This is the onboarding case and the one that actually bites.
-- **Already connected** and the ID is unsafe → leave it alone, send one alert.
-  The dashboard holds the current value; rewriting it here would break the
-  connection. Repair happens deliberately, at a maintenance window.
+- **Already connected** and the ID is unsafe → leave it alone. The dashboard
+  holds the current value; rewriting it here would break the connection. The
+  widget shows a warning row instead, and repair happens deliberately, at a
+  maintenance window.
 
-The current ID is emailed on activation, and shown in the dashboard widget only
-when the viewer is one of `MARGINAL_CORE_PROTECTED_USERS` — so onboarding is
-copy-paste for us without exposing the ID to the client's staff.
+The current ID is shown in the dashboard widget only when the viewer is one of
+`MARGINAL_CORE_PROTECTED_USERS` — so onboarding is copy-paste for us without
+exposing the ID to the client's staff.
 
 Connection state is read from the MainWP Child public-key option rather than
 `class_exists( 'MainWP_Child' )`. The predecessor's check is unnamespaced while
@@ -241,6 +240,12 @@ The panel reports, at minimum: Patchstack firewall status, MainWP connection
 state (from the public-key option), and PHP version — plus a support call to
 action linking to `MARGINAL_CORE_SUPPORT_URL`. It is designed to grow; new rows
 are the expected way this plugin gains client-visible value.
+
+With no alerting channel, the widget is also the plugin's only reporting
+surface. Two rows are therefore visible **only** to logged-in users listed in
+`MARGINAL_CORE_PROTECTED_USERS`: the MainWP unique security ID, and a warning
+when that ID is unsafe on an already-connected site. Clients see the status
+panel; we see the maintenance detail behind the same widget.
 
 Styles stay inline. At this size an enqueued stylesheet is an extra request for
 no benefit, and the widget renders only for logged-in admins.
@@ -291,31 +296,6 @@ WordPress auto-updates are deliberately **not** enabled for this plugin. The
 click stays manual in MainWP so a bad release reaches the pilot site rather
 than the fleet, which is the whole point of the staged rollout below.
 
-## Alerts
-
-`inc/alerts.php` exposes `marginal_core_alert( $event, $subject, $body )`,
-sending via `wp_mail` to `MARGINAL_CORE_ALERT_EMAIL`, deduplicated to one
-message per event type per 24 hours using a timestamp map in a single option.
-
-Events in v1:
-
-| Event | Trigger |
-|---|---|
-| `plugin_deactivated` | Deactivation hook |
-| `protected_user_missing` | Daily check; a listed login no longer exists |
-| `tamper_blocked` | A denied capability check against a protected user |
-| `mainwp_disconnected` | Daily check; public key absent where it was present |
-| `mainwp_unsafe_id` | Daily check; unsafe ID on a live connection |
-
-**Accepted limitation:** a site broken badly enough to matter may be broken
-badly enough that `wp_mail` fails silently. Events are therefore also appended
-to a capped rolling log option surfaced in the widget, so a manual visit still
-tells the story. This is the known cost of choosing email over a collector.
-
-State: one daily cron event (`marginal_core_daily`), scheduled on activation
-and cleared on deactivation. Two options: the alert timestamp map and the
-rolling log.
-
 ## Testing
 
 Proportionate to a ~300-line plugin, and concentrated where silent failure is
@@ -329,7 +309,6 @@ most expensive.
 - The unique-ID repair decision table: connected × safe, connected × unsafe,
   disconnected × safe, disconnected × unsafe, and missing.
 - The protection decision function across actor/target/config combinations.
-- Alert dedupe windows at the boundary.
 - Update handler: newer, older and equal versions; `v` prefix stripping;
   and each degradation path — HTTP error, rate limit, malformed JSON,
   release with no zip asset — returning the input unchanged.
@@ -366,7 +345,6 @@ Each of these is its own module and its own decision, added only when wanted:
 
 - Client capability lockdown — no plugin/theme installation or deletion.
 - `DISALLOW_FILE_MODS` with a corrected IP whitelist, opt-in per site.
-- A Bastion-hosted event collector, replacing email with a real feed.
 - Per-employee accounts provisioned from a central roster.
 - Danish translation.
 - Additional widget rows: backup status, uptime, SSL expiry.
@@ -381,7 +359,6 @@ changing a detail above:
 - Whether `MAINWP_CHILD_VERSION` is defined by current MainWP Child.
 - Patchstack detection: which constant, class or option is authoritative.
 - That MainWP's one-click login path is unaffected by `user-guard`.
-- Cloudflare IP range list and how it is kept current.
 - That `update_plugins_github.com` fires as expected on the staging site,
   and that the MainWP child reports the resulting update to Bastion. This
   is the one assumption the whole distribution model rests on, so it is
