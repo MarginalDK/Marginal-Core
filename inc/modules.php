@@ -21,6 +21,7 @@ function marginal_core_modules(): array {
 		'hardening'   => 'hardening.php',
 		'rest'        => 'rest.php',
 		'cron-fixes'  => 'cron-fixes.php',
+		'mainwp'      => 'mainwp.php',
 	);
 }
 

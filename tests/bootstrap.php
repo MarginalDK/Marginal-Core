@@ -153,6 +153,49 @@ if ( ! function_exists( 'is_main_site' ) ) {
 	}
 }
 
+$GLOBALS['marginal_core_options'] = array();
+
+if ( ! function_exists( 'get_option' ) ) {
+	function get_option( string $name, $default = false ) {
+		return $GLOBALS['marginal_core_options'][ $name ] ?? $default;
+	}
+}
+
+if ( ! function_exists( 'update_option' ) ) {
+	function update_option( string $name, $value ): bool {
+		$GLOBALS['marginal_core_options'][ $name ] = $value;
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'get_transient' ) ) {
+	function get_transient( string $name ) {
+		return $GLOBALS['marginal_core_options'][ '_t_' . $name ] ?? false;
+	}
+}
+
+if ( ! function_exists( 'set_transient' ) ) {
+	function set_transient( string $name, $value, int $ttl = 0 ): bool {
+		$GLOBALS['marginal_core_options'][ '_t_' . $name ] = $value;
+
+		return true;
+	}
+}
+
+if ( ! function_exists( 'wp_generate_password' ) ) {
+	function wp_generate_password( int $length = 12, bool $special = true, bool $extra = false ): string {
+		$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+		$out   = '';
+
+		for ( $i = 0; $i < $length; $i++ ) {
+			$out .= $chars[ random_int( 0, strlen( $chars ) - 1 ) ];
+		}
+
+		return $out;
+	}
+}
+
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/modules.php';
@@ -160,3 +203,4 @@ require_once __DIR__ . '/../inc/updater.php';
 require_once __DIR__ . '/../modules/hardening.php';
 require_once __DIR__ . '/../modules/rest.php';
 require_once __DIR__ . '/../modules/cron-fixes.php';
+require_once __DIR__ . '/../modules/mainwp.php';
