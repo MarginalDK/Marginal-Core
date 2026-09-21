@@ -233,3 +233,4 @@ require_once __DIR__ . '/../modules/rest.php';
 require_once __DIR__ . '/../modules/cron-fixes.php';
 require_once __DIR__ . '/../modules/mainwp.php';
 require_once __DIR__ . '/../modules/user-guard.php';
+require_once __DIR__ . '/../inc/status.php';
