@@ -1,5 +1,20 @@
 # Marginal Core Implementation Plan
 
+> **Historical record — superseded in one place.** Task 6 as written below
+> repaired MainWP's unique security ID. That code was **removed after
+> implementation** and the module is now read-only. MainWP enforces the ID only
+> when it is non-empty (`class-mainwp-connect.php:118`), so an empty value means
+> the feature is switched off — MainWP's own default. Treating empty as "unsafe"
+> made the repair *enable* the requirement on a fresh site with a value the
+> dashboard did not know, breaking its first connection. MainWP also generates
+> its own IDs with `wp_generate_password( 12, false )`, already alphanumeric, so
+> the repair was unnecessary as well as harmful.
+>
+> `marginal_core_mainwp_maybe_repair()`, `marginal_core_generate_unique_id()`,
+> `marginal_core_unique_id_action()`, `marginal_core_mainwp_id_is_repairable()`
+> and the activation hook named below no longer exist. See the spec for the
+> design as built.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build `marginal-core`, a WordPress plugin carrying Marginal's agency baseline — hardening, MainWP connection fixes, a status widget and white-labelling — installed across every client site and updated from GitHub releases.
