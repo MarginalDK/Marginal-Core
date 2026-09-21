@@ -2682,12 +2682,17 @@ Warnings render only when something is wrong. A row that always reads
 **Interfaces:**
 - Consumes: everything from `inc/status.php` (Task 8), `marginal_core_mainwp_is_connected()`, `marginal_core_mainwp_unique_id()`, `marginal_core_is_safe_unique_id()` (Task 6), `marginal_core_is_protected_login()` (Task 7), `marginal_core_config()` (Task 1).
 - Produces:
-  - `marginal_core_facts(): array` — gathers the fact array `marginal_core_warnings()` consumes.
+  - `marginal_core_facts(): array` — gathers the fact array `marginal_core_warnings()` consumes. Its keys are a contract fixed by Task 8: `search_engines_blocked`, `debug_in_production`, `environment`, `environment_declared`, `backup`, `mainwp_connected`, `mainwp_id_safe`, plus render-only `mainwp_unique_id`, `patchstack_active`, `object_cache`, `php_version`, `is_marginal_viewer`.
   - `marginal_core_widget_render(): void`
   - `marginal_core_widget_setup(): void`
   - `marginal_core_widget_boot(): void`
 
 This task has no unit tests: `marginal_core_facts()` is pure I/O against WordPress, and the rendering is HTML. Every decision it makes was tested in Task 8. Rendering is covered by the manual checklist in Task 11.
+
+Two properties matter more than the markup, and both are easy to get subtly wrong:
+
+- **The summary count must be computed from the VISIBLE warnings**, after `marginal_core_visible_warnings()` has filtered them for this viewer — never from the full list. Otherwise a client reads "2 items need attention" above a single row, with the second one invisible to them.
+- **`marginal_core_backup_status()` has six states**, not four: `ok`, `stale`, `failed`, `missing`, and the two Task 8 added — `unknown` (the record does not say whether it succeeded) and `invalid` (dated in the future). Every one needs a label; falling back to a raw state name would surface `Unknown` where the row should say what is actually wrong.
 
 - [ ] **Step 1: Write `modules/widget.php`**
 
@@ -2772,9 +2777,20 @@ function marginal_core_widget_render(): void {
 	$summary_colour = empty( $warnings ) ? $green : $amber;
 
 	$backup_state = $facts['backup']['state'];
-	$backup_text  = 'ok' === $backup_state && $facts['backup']['time']
+
+	// Five non-ok states, each phrased so the row says what is actually
+	// wrong. "Unknown" alone would read as a glitch rather than a finding.
+	$backup_labels = array(
+		'missing' => 'Never run',
+		'failed'  => 'Last run failed',
+		'stale'   => 'Out of date',
+		'unknown' => 'Result not recorded',
+		'invalid' => 'Date not trustworthy',
+	);
+
+	$backup_text = ( 'ok' === $backup_state && $facts['backup']['time'] )
 		? date_i18n( get_option( 'date_format' ), (int) $facts['backup']['time'] )
-		: ucfirst( $backup_state );
+		: ( isset( $backup_labels[ $backup_state ] ) ? $backup_labels[ $backup_state ] : 'Unknown' );
 	?>
 	<div style="font-family:system-ui,-apple-system,sans-serif;font-size:13px;color:#1e293b;">
 
