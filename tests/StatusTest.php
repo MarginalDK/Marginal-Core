@@ -251,4 +251,41 @@ final class StatusTest extends TestCase {
 		$this->assertSame( '1 item needs attention', marginal_core_summary_text( 1 ) );
 		$this->assertSame( '3 items need attention', marginal_core_summary_text( 3 ) );
 	}
+
+	public function test_patchstack_absent_regardless_of_other_values(): void {
+		$this->assertSame( 'absent', marginal_core_patchstack_state( false, 1, 1, 0 ) );
+		$this->assertSame( 'absent', marginal_core_patchstack_state( false, 0, 0, 1 ) );
+		$this->assertSame( 'absent', marginal_core_patchstack_state( false, null, '', 'yes' ) );
+	}
+
+	public function test_patchstack_present_but_not_activated_is_inactive(): void {
+		$this->assertSame( 'inactive', marginal_core_patchstack_state( true, 0, 1, 0 ) );
+		$this->assertSame( 'inactive', marginal_core_patchstack_state( true, '0', 1, 0 ) );
+	}
+
+	public function test_patchstack_activated_firewall_on_paid_licence_is_protected(): void {
+		$this->assertSame( 'protected', marginal_core_patchstack_state( true, 1, 1, 0 ) );
+	}
+
+	public function test_patchstack_activated_firewall_on_paid_licence_is_protected_with_string_values(): void {
+		$this->assertSame( 'protected', marginal_core_patchstack_state( true, '1', '1', '0' ) );
+	}
+
+	public function test_patchstack_free_licence_is_monitored_even_with_firewall_flag_on(): void {
+		$this->assertSame( 'monitored', marginal_core_patchstack_state( true, 1, 1, 1 ) );
+	}
+
+	public function test_patchstack_firewall_off_is_monitored(): void {
+		$this->assertSame( 'monitored', marginal_core_patchstack_state( true, 1, 0, 0 ) );
+	}
+
+	public function test_patchstack_garbage_activation_values_never_report_protected(): void {
+		$this->assertNotSame( 'protected', marginal_core_patchstack_state( true, null, 1, 0 ) );
+		$this->assertNotSame( 'protected', marginal_core_patchstack_state( true, '', 1, 0 ) );
+		$this->assertNotSame( 'protected', marginal_core_patchstack_state( true, 'yes', 1, 0 ) );
+
+		$this->assertSame( 'inactive', marginal_core_patchstack_state( true, null, 1, 0 ) );
+		$this->assertSame( 'inactive', marginal_core_patchstack_state( true, '', 1, 0 ) );
+		$this->assertSame( 'inactive', marginal_core_patchstack_state( true, 'yes', 1, 0 ) );
+	}
 }

@@ -76,6 +76,37 @@ function marginal_core_backup_status( $last_backup, int $max_age_days, int $now 
 }
 
 /**
+ * Resolve Patchstack's protection state.
+ *
+ * Pure. Mirrors Patchstack's own firewall gate rather than inventing a test:
+ * the plugin itself runs its firewall only when the licence is activated, the
+ * basic firewall is on, and the licence is not the free tier
+ * (patchstack.php:343 and includes/mu-plugin.php:14 in Patchstack 2.3.7).
+ *
+ * A free licence still scans for vulnerabilities but runs no firewall, which
+ * is why "installed" and "protected" are not the same answer.
+ *
+ * @param mixed $activated
+ * @param mixed $firewall
+ * @param mixed $free
+ */
+function marginal_core_patchstack_state( bool $present, $activated, $firewall, $free ): string {
+	if ( ! $present ) {
+		return 'absent';
+	}
+
+	if ( 1 !== (int) $activated ) {
+		return 'inactive';
+	}
+
+	if ( 1 === (int) $firewall && 0 === (int) $free ) {
+		return 'protected';
+	}
+
+	return 'monitored';
+}
+
+/**
  * Every warning the current facts justify.
  *
  * Pure. Warnings render only when something is wrong — a row that always

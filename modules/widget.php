@@ -44,9 +44,12 @@ function marginal_core_facts(): array {
 		'mainwp_connected'       => marginal_core_mainwp_is_connected(),
 		'mainwp_unique_id'       => $unique_id,
 		'mainwp_id_safe'         => marginal_core_is_safe_unique_id( $unique_id ),
-		'patchstack_active'      => defined( 'PATCHSTACK_VERSION' )
-			|| class_exists( 'Patchstack' )
-			|| (bool) get_option( 'patchstack_options' ),
+		'patchstack'             => marginal_core_patchstack_state(
+			class_exists( 'P_Core' ),
+			get_option( 'patchstack_license_activated', 0 ),
+			get_option( 'patchstack_basic_firewall', 0 ),
+			get_option( 'patchstack_license_free', 0 )
+		),
 		'object_cache'           => function_exists( 'wp_using_ext_object_cache' ) && wp_using_ext_object_cache(),
 		'php_version'            => PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION,
 		'is_marginal_viewer'     => $user && marginal_core_is_protected_login( (string) $user->user_login ),
@@ -110,10 +113,26 @@ function marginal_core_widget_render(): void {
 
 		<table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
 			<?php
+			$patchstack_labels = array(
+				'protected' => 'Firewall active',
+				'monitored' => 'Monitoring only',
+				'inactive'  => 'Not activated',
+				'absent'    => 'Not installed',
+			);
+
+			$patchstack_colours = array(
+				'protected' => $green,
+				'monitored' => $amber,
+				'inactive'  => $amber,
+				'absent'    => $red,
+			);
+
+			$patchstack_state = $facts['patchstack'];
+
 			echo marginal_core_widget_row(
 				'Firewall protection (Patchstack)',
-				$facts['patchstack_active'] ? 'Protected' : 'Standard',
-				$facts['patchstack_active'] ? $green : $amber
+				$patchstack_labels[ $patchstack_state ] ?? 'Not installed',
+				$patchstack_colours[ $patchstack_state ] ?? $red
 			);
 
 			echo marginal_core_widget_row(

@@ -29,6 +29,11 @@ actually running.
 - [ ] Set `WP_ENVIRONMENT_TYPE` to `staging` — the coloured strip appears.
 - [ ] Unset it — the strip goes, and the "not declared" row appears for a
       protected user only.
+- [ ] On a site with Patchstack actually installed and its firewall running
+      (licence activated, basic firewall on, not the free tier), the
+      Patchstack row reads "Firewall active" in green. Confirm on a site
+      that is only monitoring (free licence, or firewall toggled off) that
+      it instead reads "Monitoring only" in amber, not "Firewall active".
 
 ## MainWP
 

@@ -76,11 +76,23 @@ install, MainWP dashboard, or GitHub release. They are the subject of
   dashboard listing the update. This also validates the `Update URI` header,
   `MARGINAL_CORE_BASENAME`, and the `marginal_core_latest_release` transient
   behaving as designed, none of which can be proven without a real install.
-- **Patchstack detection.** The `patchstack_active` fact checks for the
-  `PATCHSTACK_VERSION` constant, a `Patchstack` class, and a
-  `patchstack_options` option, but none of these three signals has been
-  confirmed against a real Patchstack installation — they are inferred
-  naming conventions, not confirmed from Patchstack's published source. This
-  is the one detection in the widget that carries no source-level
-  confirmation at all, and it should be checked explicitly the first time a
-  Patchstack-protected site runs this plugin.
+- **Patchstack detection — verified against published source (Patchstack
+  Security 2.3.7).** The `patchstack` fact (`marginal_core_patchstack_state()`
+  in `inc/status.php`, consumed by `modules/widget.php`) checks presence via
+  the `P_Core` class (`includes/core.php:12`) and then mirrors Patchstack's
+  own firewall gate — `get_option( 'patchstack_license_activated', 0 ) == 1
+  && get_option( 'patchstack_basic_firewall', 0 ) == 1 && get_option(
+  'patchstack_license_free', 0 ) == 0` — exactly as Patchstack itself applies
+  it at `patchstack.php:343` and again at `includes/mu-plugin.php:14`. The
+  earlier version of this check tested `defined( 'PATCHSTACK_VERSION' )`, a
+  `Patchstack` class, and a `patchstack_options` option; none of the three
+  exist in Patchstack 2.3.7, so the badge read "Standard" (unprotected) on
+  every site regardless of actual protection. That version's source is on
+  file at `/Users/bef/Downloads/patchstack`. The badge now reports four
+  states — `absent`, `inactive`, `monitored` (activated but no firewall,
+  which is what a free licence gets), and `protected` — instead of a single
+  boolean, because a free licence genuinely occupies a third state between
+  "not installed" and "protected". Still confirm this live on a real
+  Patchstack-protected site per the manual checklist below; source-reading
+  does not substitute for seeing the option values as WordPress actually
+  stores them.
