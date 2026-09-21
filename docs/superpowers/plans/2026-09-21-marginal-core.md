@@ -359,12 +359,19 @@ use PHPUnit\Framework\TestCase;
 
 final class ModulesTest extends TestCase {
 
-	public function test_manifest_is_not_empty(): void {
-		$this->assertNotEmpty( marginal_core_modules() );
+	public function test_manifest_is_an_array(): void {
+		$this->assertIsArray( marginal_core_modules() );
 	}
 
 	public function test_manifest_maps_slugs_to_php_filenames(): void {
-		foreach ( marginal_core_modules() as $slug => $file ) {
+		$modules = marginal_core_modules();
+
+		// Asserted before the loop so this test is never vacuous: the
+		// manifest is empty until Task 4, and a test that asserts nothing
+		// is marked risky and proves nothing.
+		$this->assertIsArray( $modules );
+
+		foreach ( $modules as $slug => $file ) {
 			$this->assertIsString( $slug );
 			$this->assertMatchesRegularExpression( '/^[a-z][a-z0-9-]*$/', $slug );
 			$this->assertSame( $slug . '.php', $file );
@@ -372,7 +379,11 @@ final class ModulesTest extends TestCase {
 	}
 
 	public function test_every_manifest_entry_has_a_file_on_disk(): void {
-		foreach ( marginal_core_modules() as $file ) {
+		$modules = marginal_core_modules();
+
+		$this->assertIsArray( $modules );
+
+		foreach ( $modules as $file ) {
 			$this->assertFileExists( MARGINAL_CORE_DIR . 'modules/' . $file );
 		}
 	}
@@ -390,7 +401,7 @@ final class ModulesTest extends TestCase {
 }
 ```
 
-Note: `test_every_manifest_entry_has_a_file_on_disk` fails until the last module lands in Task 10. That is intended — it is the check that the manifest and the filesystem never drift. Until then, only list slugs in the manifest whose files exist; each later task adds its own line.
+Note: the manifest is empty until Task 4, so the two `foreach` tests pass trivially at first and tighten as each module lands — they are the check that manifest and filesystem never drift. Each asserts `assertIsArray` before its loop so it is never a test that asserts nothing. The stronger assertion that all seven modules are present belongs in Task 10, once all seven exist.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -2886,6 +2897,13 @@ final class WhiteLabelTest extends TestCase {
 		$this->assertStringContainsString( 'Marginal', marginal_core_login_header_text() );
 	}
 
+	public function test_manifest_contains_all_seven_modules(): void {
+		$this->assertSame(
+			array( 'hardening', 'rest', 'cron-fixes', 'mainwp', 'user-guard', 'widget', 'white-label' ),
+			array_keys( marginal_core_modules() )
+		);
+	}
+
 	public function test_boot_registers_all_three_filters(): void {
 		marginal_core_white_label_boot();
 
@@ -2957,7 +2975,7 @@ In `inc/modules.php`, after the `widget` line:
 - [ ] **Step 6: Run tests to verify they pass**
 
 Run: `composer test`
-Expected: PASS, 97 tests (93 + 4 new). `ModulesTest::test_every_manifest_entry_has_a_file_on_disk` now covers all seven modules.
+Expected: PASS, 98 tests (93 + 5 new). `test_manifest_contains_all_seven_modules` now pins the manifest, and `ModulesTest::test_every_manifest_entry_has_a_file_on_disk` covers all seven files.
 
 - [ ] **Step 7: Commit**
 
@@ -3060,7 +3078,7 @@ Add to the configuration section:
 - [ ] **Step 3: Run the full suite one last time**
 
 Run: `composer test`
-Expected: PASS, 97 tests, zero warnings, zero notices.
+Expected: PASS, 98 tests, zero warnings, zero notices, zero risky.
 
 - [ ] **Step 4: Lint every PHP file**
 
@@ -3112,4 +3130,4 @@ Do not skip step 2. It is the only thing standing between a bad release and ever
 
 **Interface consistency.** Function names were checked across tasks: `marginal_core_is_safe_unique_id` (defined Task 6, used Tasks 8 and 9), `marginal_core_is_protected_login` (defined Task 7, used Task 9), `marginal_core_config` (defined Task 1, used in 6, 7, 8, 9, 10), the `marginal_core_<slug>_boot` convention (defined Task 2, satisfied by every module task), and the facts array keys (produced Task 9, consumed Task 8 — `search_engines_blocked`, `debug_in_production`, `environment`, `environment_declared`, `backup`, `mainwp_connected`, `mainwp_id_safe`).
 
-**Running test count** by task, for spotting a silently skipped suite: 10, 15, 24, 34, 39, 55, 72, 93, 93, 97. Counted from the test methods written into this plan, not estimated.
+**Running test count** by task, for spotting a silently skipped suite: 10, 15, 24, 34, 39, 55, 72, 93, 93, 98. Counted from the test methods written into this plan, not estimated.
