@@ -36,7 +36,8 @@ Three problems, in the order they hurt:
 |---|---|
 | Regular plugin, not an mu-plugin | MainWP already installs and updates plugins across the fleet. An mu-plugin would need a bespoke updater, and a bad update would hit every site at once with no rollback path. Accepted cost: a client admin *can* deactivate it. |
 | Config lives in `wp-config.php`, never in the plugin | v1.4.1 `define()`s its toggles inside the plugin file, so the next fleet update erases any per-site change. Constants read from outside the artifact fix this. |
-| `Update URI: false` in the header | Without it, a wordpress.org plugin whose slug collides with `marginal-core` can overwrite this plugin on every site. One line, catastrophic if omitted. |
+| `Update URI` points at the repo | Any non-wordpress.org `Update URI` stops w.org from overwriting this plugin when a slug collides — catastrophic if omitted. Pointing it at the repo rather than `false` additionally routes update checks to our own handler, so every site gains a real update channel instead of none. |
+| Public repository | GitHub-driven updates then need no credentials anywhere. A private repo would put a GitHub token on every client site, which is a token to treat as public. The plugin carries conventions, not secrets — all per-site configuration is `wp-config.php` constants — so readability costs nothing we rely on. |
 | No user provisioning | Circular: installing the plugin requires admin access, which requires the account to already exist. The plugin protects an account it did not create. |
 | No `DISALLOW_FILE_MODS` / IP whitelisting in v1 | Most intrusive feature in the predecessor, fights MainWP's own updates, and fails silently — a site that refuses updates looks identical to a healthy one. Backlogged as opt-in. |
 | Conservative unique-ID repair | Regenerating a *working* ID breaks the connection, because the dashboard holds the old value. Repair only before first connection; alert otherwise. |
@@ -63,6 +64,7 @@ marginal-core/
     config.php               constant + filter accessor, safe defaults
     request.php              Cloudflare-aware client IP
     alerts.php               deduped wp_mail wrapper
+    updater.php              GitHub release update channel
   modules/
     hardening.php
     rest.php
@@ -88,7 +90,7 @@ Namespace `Marginal\Core`; anything necessarily global is prefixed
  * Version:     1.0.0
  * Author:      Marginal
  * Author URI:  https://marginal.dk
- * Update URI:  false
+ * Update URI:  https://github.com/MarginalDK/Marginal-Core
  * Requires at least: 6.0
  * Requires PHP: 7.4
  */
@@ -252,6 +254,43 @@ so a client-specific support destination is one define rather than three.
 Note for implementation: `wp-login.php` is not an admin context, so this
 module's hooks must not sit behind an `is_admin()` check.
 
+## Self-update
+
+Since WordPress 5.8, core parses the `Update URI` header, extracts its
+hostname, and hands the update check to a filter named after it. With the
+header above that filter is `update_plugins_github.com`:
+
+```php
+add_filter( 'update_plugins_github.com', 'marginal_core_check_for_update', 10, 4 );
+```
+
+The handler fetches the repository's latest release from the public GitHub
+API, compares its tag against `MARGINAL_CORE_VERSION` with `version_compare`,
+and on a newer version returns an array carrying `id`, `slug`, `version`,
+`url` and `package` — the release's zip asset. Core does everything after
+that: the site shows an ordinary "update available", and the MainWP child
+reports it to Bastion alongside every other pending update.
+
+The full path is therefore: tag a release, then click update in Bastion once.
+No zip uploads, no Git Updater dependency, no credentials on client sites.
+
+Three constraints on the handler, all of which exist because this code runs
+unattended on every client site:
+
+- **Never fatal, never block.** Any network failure, rate limit, malformed
+  response or missing asset returns `$update` untouched. A GitHub outage must
+  degrade to "no update found", never to a broken admin screen.
+- **Cached.** Responses are cached in a transient for twelve hours, so the
+  fleet does not hammer the API and an admin page load never waits on GitHub.
+  WordPress's own update cron already throttles the check; the transient
+  covers the manual "check again" path.
+- **Version comes from the tag, not the release title.** Tags are `v1.1.0`;
+  the leading `v` is stripped before comparison.
+
+WordPress auto-updates are deliberately **not** enabled for this plugin. The
+click stays manual in MainWP so a bad release reaches the pilot site rather
+than the fleet, which is the whole point of the staged rollout below.
+
 ## Alerts
 
 `inc/alerts.php` exposes `marginal_core_alert( $event, $subject, $body )`,
@@ -291,6 +330,9 @@ most expensive.
   disconnected × safe, disconnected × unsafe, and missing.
 - The protection decision function across actor/target/config combinations.
 - Alert dedupe windows at the boundary.
+- Update handler: newer, older and equal versions; `v` prefix stripping;
+  and each degradation path — HTTP error, rate limit, malformed JSON,
+  release with no zip asset — returning the input unchanged.
 
 **Manual verification checklist**, run on a staging child site before each
 release: capability denial through both the admin UI and a REST `DELETE`,
@@ -308,10 +350,9 @@ A tag matching `v*` triggers a GitHub Actions workflow that builds a versioned
 zip, excluding `tests/`, `docs/` and dev configuration, and attaches it to the
 release.
 
-Installation is MainWP's normal plugin-install flow. **Open item:** if the repo
-stays private, release-asset URLs are not publicly fetchable, so install-from-
-URL will not work and the zip must be downloaded and uploaded through MainWP
-by hand. Decide repo visibility before the first release.
+First installation on a site is MainWP's normal plugin-install flow, from the
+public release URL. Every subsequent version arrives through the self-update
+channel above and is applied from Bastion like any other plugin update.
 
 Rollout order, deliberately slow at the start:
 
@@ -325,7 +366,6 @@ Each of these is its own module and its own decision, added only when wanted:
 
 - Client capability lockdown — no plugin/theme installation or deletion.
 - `DISALLOW_FILE_MODS` with a corrected IP whitelist, opt-in per site.
-- Self-update independent of MainWP (Git Updater or similar).
 - A Bastion-hosted event collector, replacing email with a real feed.
 - Per-employee accounts provisioned from a central roster.
 - Danish translation.
@@ -342,3 +382,7 @@ changing a detail above:
 - Patchstack detection: which constant, class or option is authoritative.
 - That MainWP's one-click login path is unaffected by `user-guard`.
 - Cloudflare IP range list and how it is kept current.
+- That `update_plugins_github.com` fires as expected on the staging site,
+  and that the MainWP child reports the resulting update to Bastion. This
+  is the one assumption the whole distribution model rests on, so it is
+  verified first, before any other module is written.
