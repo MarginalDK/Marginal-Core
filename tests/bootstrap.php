@@ -169,43 +169,6 @@ if ( ! function_exists( 'update_option' ) ) {
 	}
 }
 
-if ( ! function_exists( 'get_transient' ) ) {
-	function get_transient( string $name ) {
-		return $GLOBALS['marginal_core_options'][ '_t_' . $name ] ?? false;
-	}
-}
-
-if ( ! function_exists( 'set_transient' ) ) {
-	function set_transient( string $name, $value, int $ttl = 0 ): bool {
-		$GLOBALS['marginal_core_options'][ '_t_' . $name ] = $value;
-
-		return true;
-	}
-}
-
-// Finding 5: null means "behave normally"; a test can set this to force
-// wp_generate_password() to return a fixed value, simulating a
-// `random_password` filter that injects symbols. Reset per-test in
-// MainwpTest::setUp() so nothing leaks between tests.
-$GLOBALS['marginal_core_test_wp_generate_password_override'] = null;
-
-if ( ! function_exists( 'wp_generate_password' ) ) {
-	function wp_generate_password( int $length = 12, bool $special = true, bool $extra = false ): string {
-		if ( null !== $GLOBALS['marginal_core_test_wp_generate_password_override'] ) {
-			return $GLOBALS['marginal_core_test_wp_generate_password_override'];
-		}
-
-		$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-		$out   = '';
-
-		for ( $i = 0; $i < $length; $i++ ) {
-			$out .= $chars[ random_int( 0, strlen( $chars ) - 1 ) ];
-		}
-
-		return $out;
-	}
-}
-
 $GLOBALS['marginal_core_users'] = array();
 
 if ( ! function_exists( 'get_userdata' ) ) {

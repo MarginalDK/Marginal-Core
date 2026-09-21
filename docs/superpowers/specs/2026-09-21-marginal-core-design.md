@@ -1,7 +1,7 @@
 # Marginal Core — design
 
 A single WordPress plugin carrying Marginal's agency baseline: hardening,
-MainWP connection fixes, and white-labelling. Installed on essentially every
+MainWP connection checks, and white-labelling. Installed on essentially every
 client site, updated centrally through MainWP.
 
 - Repo: `github.com/MarginalDK/Marginal-Core`
@@ -14,7 +14,9 @@ client site, updated centrally through MainWP.
 Three problems, in the order they hurt:
 
 1. **MainWP child connections break** when the child's unique security ID
-   contains symbols.
+   contains symbols. This plugin detects and reports that, to a Marginal
+   viewer, rather than rewriting the ID — see the `mainwp` module below for
+   why an automatic repair was built, then deliberately removed.
 2. **The same baseline is copy-pasted onto every site** — hardening, cron
    fixes, branding — so it drifts, and fixing one site fixes only that site.
 3. **Agency access is deletable.** A client admin can remove the account we
@@ -39,7 +41,7 @@ Three problems, in the order they hurt:
 | Public repository | GitHub-driven updates then need no credentials anywhere. A private repo would put a GitHub token on every client site, which is a token to treat as public. The plugin carries conventions, not secrets — all per-site configuration is `wp-config.php` constants — so readability costs nothing we rely on. |
 | No user provisioning | Circular: installing the plugin requires admin access, which requires the account to already exist. The plugin protects an account it did not create. |
 | No `DISALLOW_FILE_MODS` / IP whitelisting in v1 | Most intrusive feature in the predecessor, fights MainWP's own updates, and fails silently — a site that refuses updates looks identical to a healthy one. Backlogged as opt-in. |
-| Conservative unique-ID repair | Regenerating a *working* ID breaks the connection, because the dashboard holds the old value. Repair only before first connection; flag it in the widget otherwise. |
+| MainWP unique-ID module is detect-only, not repair | An earlier version rewrote an "unsafe" ID on any site not yet connected. That was a live bug: MainWP enforces the unique-ID requirement only when the stored ID is **non-empty** (`class-mainwp-connect.php:118`), and an empty ID is MainWP's own default — it means the feature is off, not broken. The repair treated empty as unsafe and wrote a real ID into that slot on every fresh site, which *enabled* a requirement the dashboard didn't know about and broke the first connection attempt. It was also never necessary: MainWP generates its own IDs with `wp_generate_password( 12, false )`, already alphanumeric, so a symbol-bearing ID never comes from MainWP itself — only from a human, a `MAINWP_CHILD_UNIQUEID` constant, or an old MainWP version, and the constant case was already correctly left untouched. The module now only reads and flags. |
 | No reporting of any kind | Patchstack and MainWP already alert us: MainWP reports plugin status and connection loss per site, Patchstack covers the security side. A second channel would duplicate both and add a cron event, two options and an outbound mail path to every client site. Anything this plugin knows and MainWP does not is surfaced passively in the dashboard widget. |
 | Module loading is never context-conditional | Every enabled module loads on every request type. Conditional `require` was considered and rejected: `REST_REQUEST` is not defined at plugin-load time, so a REST request is indistinguishable from a public page view, and the user-protection module would be skipped on exactly the path that can delete users. Under opcache seven small requires cost microseconds; the real cost is hooks firing, which each module gates internally. |
 
@@ -87,7 +89,7 @@ WordPress loaded.
 /**
  * Plugin Name: Marginal Core
  * Plugin URI:  https://github.com/MarginalDK/Marginal-Core
- * Description: Marginal agency baseline — hardening, MainWP fixes, white-labelling.
+ * Description: Marginal agency baseline — hardening, MainWP checks, white-labelling.
  * Version:     1.0.0
  * Author:      Marginal
  * Author URI:  https://marginal.dk
@@ -178,25 +180,42 @@ Carried from predecessor §4, both pure additions with no client-visible effect:
 
 ### `mainwp`
 
-The unique security ID is the reason this project exists, and the repair rule
-is deliberately conservative because the failure mode of getting it wrong is
-disconnecting a working site.
+The unique security ID is the reason this project exists. The module is
+**read-only** — it never writes `mainwp_child_uniqueId` or any other MainWP
+option, and that is a property worth preserving deliberately, not an
+oversight.
 
-Safe IDs are 32 characters of `[A-Za-z0-9]`, generated with
-`wp_generate_password( 32, false, false )` and validated against
+Safe IDs are 32 characters of `[A-Za-z0-9]`, validated against
 `/^[A-Za-z0-9]{8,64}$/`.
 
-Evaluated on activation, and on `admin_init` while the site is not yet
-connected — throttled by a short transient, and skipped entirely once a public
-key exists. A connected site therefore does one option read and nothing else,
-forever. There is no cron event.
+An earlier version of this module *did* write: on a site not yet connected,
+an unsafe ID was regenerated on `admin_init`. That was removed as a live bug,
+and the reasoning is worth keeping on record so it is not rediscovered as a
+gap and re-added:
 
-- **Not yet connected** and the ID is missing or unsafe → write a safe ID
-  immediately. This is the onboarding case and the one that actually bites.
-- **Already connected** and the ID is unsafe → leave it alone. The dashboard
-  holds the current value; rewriting it here would break the connection. The
-  widget shows a warning row instead, and repair happens deliberately, at a
-  maintenance window.
+- MainWP Child enforces the unique-ID requirement only when the stored ID is
+  **non-empty** (`class-mainwp-connect.php:118`, confirmed against
+  `github.com/mainwp/mainwp-child`). An empty ID is MainWP's own default and
+  simply means the feature is switched off — it is not evidence of anything
+  broken.
+- The safety regex requires 8-64 characters, so it correctly reports an empty
+  ID as "unsafe" in the narrow sense of "not fit to send through the
+  handshake". The old repair conflated that with "needs fixing" and wrote a
+  fresh 32-character ID into the option on every fresh, disconnected site.
+  That *enables* the unique-ID requirement with a value the Marginal
+  dashboard has never seen, and the site's very first connection attempt
+  then fails with MainWP's `REG_ERROR3`.
+- Even setting that bug aside, the write was never useful: MainWP generates
+  its own IDs with `wp_generate_password( 12, false )` — already alphanumeric
+  (`class-mainwp-helper.php:603-608`). MainWP never produces a symbol-bearing
+  ID itself, so one can only come from a human typing it in, a host-set
+  `MAINWP_CHILD_UNIQUEID` constant, or an old MainWP version — and the
+  constant case was already, correctly, left untouched (writing the option
+  there changes nothing MainWP reads).
+
+So the module now only detects an unsafe, non-empty ID and surfaces it as a
+widget warning — see `widget` below — regardless of connection state; it
+never attempts to fix it.
 
 The current ID is shown in the dashboard widget only when the viewer is one of
 `MARGINAL_CORE_PROTECTED_USERS` — so onboarding is copy-paste for us without
@@ -299,8 +318,10 @@ With no alerting channel, the widget is the plugin's only reporting surface:
 
 - The MainWP unique security ID, so onboarding is copy-paste for us without
   exposing it to the client's staff.
-- A warning when that ID is unsafe on an already-connected site — the case the
-  `mainwp` module deliberately refuses to repair automatically.
+- A warning when that ID is unsafe and non-empty, whether the site is
+  connected or not — the `mainwp` module is read-only and never repairs it;
+  see that section for why. An empty ID does not warn: it is MainWP's own
+  default and means the feature is off, not broken.
 - "Environment not declared", when `WP_ENVIRONMENT_TYPE` is unset.
 
 That last row exists because `wp_get_environment_type()` detects nothing. It
@@ -387,9 +408,8 @@ most expensive.
 
 - Config resolution: constant set, constant absent, filter override.
 - Module enable/disable parsing, including whitespace and empty strings.
-- Unique-ID validation and generation character set.
-- The unique-ID repair decision table: connected × safe, connected × unsafe,
-  disconnected × safe, disconnected × unsafe, and missing.
+- Unique-ID validation, and constant-vs-option precedence when resolving the
+  effective ID.
 - The protection decision function across actor/target/config combinations.
 - Widget warning conditions: each fires when it should and stays absent when
   it should not, and the summary line counts them correctly.

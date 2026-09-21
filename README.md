@@ -1,7 +1,7 @@
 # Marginal Core
 
 Marginal's agency baseline for client WordPress sites: hardening, MainWP
-connection fixes, and white-labelling, in one plugin installed across the
+connection checks, and white-labelling, in one plugin installed across the
 fleet and updated centrally.
 
 > **Status: v0.9.0, pre-release.** Feature-complete and unit-tested, but not
@@ -17,7 +17,7 @@ fleet and updated centrally.
 | `hardening` | Disables the dashboard file editor and XML-RPC's authenticated methods, and strips the `X-Pingback` header. `/xmlrpc.php` itself stays reachable — `pingback.ping` still answers — this only closes the authenticated-method surface (e.g. `wp.getUsersBlogs`) |
 | `rest` | Blocks unauthenticated user enumeration via the REST API |
 | `cron-fixes` | Registers the `minute` schedule MainWP expects; silences MainWP notices on multisite sub-sites |
-| `mainwp` | Regenerates the MainWP Child unique security ID when it contains symbols that break the connection — but only on a site that is not yet connected; a connected site is only flagged, never rewritten, since the dashboard would still hold the old value |
+| `mainwp` | Detects a MainWP Child unique security ID that contains symbols and would break the connection, and reports it to a Marginal viewer. Read-only — it never writes the ID. An empty ID is not a fault; it is MainWP's own default and means the unique-ID requirement is switched off |
 | `user-guard` | Prevents client admins from deleting or demoting Marginal's account |
 | `widget` | Replaces default dashboard clutter with a Marginal status and support panel: backup freshness, MainWP connection, Patchstack, environment, and several other warning conditions |
 | `white-label` | Marginal branding on the login screen and admin footer |

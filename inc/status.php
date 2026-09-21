@@ -170,21 +170,21 @@ function marginal_core_warnings( array $facts ): array {
 	$id_safe   = array_key_exists( 'mainwp_id_safe', $facts ) && ! empty( $facts['mainwp_id_safe'] );
 	$unique_id = isset( $facts['mainwp_unique_id'] ) ? (string) $facts['mainwp_unique_id'] : '';
 
-	// Unsafe-and-non-empty only: an empty ID is the normal, momentary state of
-	// a disconnected site between admin loads — marginal_core_mainwp_maybe_repair()
-	// clears it on the next one. Warning about that would spray a false alarm
-	// onto every fresh onboarding. A non-empty unsafe ID is different: on a
-	// connected site rewriting it would break the connection, and on a
-	// disconnected site it means the effective ID is constant-sourced (or the
-	// repair has not run yet) — either way, worth a distinct explanation of the
-	// remedy, since "connected" and "disconnected" call for different fixes.
+	// Unsafe-and-non-empty only. An *empty* ID is not a fault: it is MainWP's
+	// own default, and it means the unique-ID requirement is switched off —
+	// MainWP enforces it only when the stored ID is non-empty
+	// (class-mainwp-connect.php:118). Warning about an empty ID would spray a
+	// false alarm onto every fresh, unconnected site. This plugin never
+	// writes this option — see modules/mainwp.php for why the earlier repair
+	// was removed — so a non-empty unsafe ID stays unsafe until a human fixes
+	// it, and the two variants below just point at where.
 	if ( ! $id_safe && '' !== $unique_id ) {
 		$warnings[] = array(
 			'id'            => 'mainwp-id',
 			'level'         => 'warn',
 			'text'          => $connected
-				? 'The MainWP security ID contains unsafe characters. Repair it at a maintenance window — changing it now would break the connection.'
-				: 'The MainWP security ID contains unsafe characters and the site is disconnected. If it is set via MAINWP_CHILD_UNIQUEID in wp-config.php, correct it there — this plugin cannot repair a constant-sourced ID; otherwise it should self-repair on the next admin page load.',
+				? 'The MainWP security ID contains unsafe characters. Correct it in MainWP\'s own settings on this child site, then update the value stored on the Marginal dashboard to match.'
+				: 'The MainWP security ID contains unsafe characters and the site is disconnected. Correct it in MainWP\'s own settings on this child site, then update the value stored on the Marginal dashboard to match.',
 			'marginal_only' => true,
 		);
 	}

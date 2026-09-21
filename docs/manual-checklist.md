@@ -43,19 +43,18 @@ actually running.
 
 ## MainWP
 
-- [ ] On a disconnected site with a symbol-bearing unique ID, load any admin
-      page — the ID is replaced with a 32-character alphanumeric value.
-- [ ] On a connected site with a symbol-bearing unique ID, load any admin page
-      — the ID is **unchanged**, and the warning row appears for a protected
-      user. This is the check that protects live connections.
-- [ ] MainWP re-add window: on a site connected with an **empty** unique ID,
-      remove it from the MainWP dashboard, then load any admin page on the
-      child. The empty ID reads as "disconnected + unsafe (empty)", so
-      `marginal_core_mainwp_maybe_repair()` writes a new 32-character ID on
-      that load. Re-adding the site in MainWP with the old (empty) value now
-      fails on a security-ID mismatch — this is expected, and the recovery is
-      to read the **current** ID from the widget (visible to a protected/
-      Marginal viewer) and use that when re-adding.
+This module is read-only: it never writes `mainwp_child_uniqueId` or any
+other MainWP option. It only detects and reports.
+
+- [ ] On a site with a symbol-bearing (non-empty, unsafe) unique ID, load any
+      admin page — the ID is **unchanged**, and the warning row appears for a
+      protected/Marginal viewer, whether the site is connected or not.
+- [ ] On that same site, sign in as a client administrator — no MainWP
+      security ID row and no warning appear anywhere in the panel.
+- [ ] On a disconnected site with an **empty** unique ID (MainWP's own
+      default, meaning the unique-ID requirement is off), load any admin
+      page — no warning appears. An empty ID is not a fault; see
+      `modules/mainwp.php`'s docblock and `docs/verification.md`.
 
 ## XML-RPC
 

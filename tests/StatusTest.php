@@ -157,10 +157,10 @@ final class StatusTest extends TestCase {
 	}
 
 	public function test_unsafe_nonempty_id_when_disconnected_still_warns(): void {
-		// Finding 4: a disconnected site with an unsafe, non-empty ID (the
-		// constant-sourced case marginal_core_mainwp_id_is_repairable() can't
-		// fix) used to warn nowhere. It must warn regardless of connection
-		// state — only the wording changes.
+		// Finding 4: a disconnected site with an unsafe, non-empty ID (e.g.
+		// constant-sourced, which this plugin was never able to fix) used to
+		// warn nowhere. It must warn regardless of connection state — only
+		// the wording changes.
 		$facts = $this->healthy_facts();
 		$facts['mainwp_connected'] = false;
 		$facts['mainwp_unique_id'] = 'bad&id';
@@ -170,9 +170,10 @@ final class StatusTest extends TestCase {
 	}
 
 	public function test_empty_id_when_disconnected_does_not_warn(): void {
-		// The momentary, normal state of a disconnected site between admin
-		// loads: marginal_core_mainwp_maybe_repair() clears an empty ID on the
-		// next one. Warning about it would false-alarm every fresh onboarding.
+		// An empty ID is not a fault — it is MainWP's own default, and it
+		// means the unique-ID requirement is switched off
+		// (class-mainwp-connect.php:118 in MainWP Child). Warning about it
+		// would false-alarm every fresh, unconnected onboarding.
 		$facts = $this->healthy_facts();
 		$facts['mainwp_connected'] = false;
 		$facts['mainwp_unique_id'] = '';

@@ -1,11 +1,30 @@
 <?php
 /**
- * MainWP child connection.
+ * MainWP child connection — read-only.
  *
- * The unique security ID breaks connections when it contains symbols. The
- * repair rule is deliberately conservative: rewriting the ID on a connected
- * site would break that connection, because the dashboard still holds the
- * old value. A live site is therefore only ever flagged, never repaired.
+ * This module never writes a MainWP option. It used to: on a site not yet
+ * connected, an "unsafe" unique security ID was rewritten with a fresh
+ * alphanumeric one. That was removed because it was both harmful and
+ * pointless:
+ *
+ * - MainWP enforces the unique-ID requirement only when the ID is
+ *   *non-empty* (MainWP Child's own `class-mainwp-connect.php:118`). An
+ *   empty ID is MainWP's default and means the feature is switched off, not
+ *   that something is broken. `marginal_core_is_safe_unique_id()` treats
+ *   `''` as unsafe (the regex requires 8-64 characters), so the old repair
+ *   wrote a real ID into that slot on every fresh, unconnected site — which
+ *   *enables* a requirement the Marginal dashboard knows nothing about, and
+ *   the site's first connection attempt then fails on `REG_ERROR3`.
+ * - Even on a connected site, MainWP generates its own IDs with
+ *   `wp_generate_password( 12, false )` — already alphanumeric
+ *   (`class-mainwp-helper.php:603-608`). MainWP never produces a
+ *   symbol-bearing ID itself, so a symbol-bearing ID can only come from a
+ *   human typing one, a host-set `MAINWP_CHILD_UNIQUEID` constant, or an old
+ *   MainWP version — and the constant case was already, correctly, left
+ *   untouched. There was nothing left for the write to usefully fix.
+ *
+ * Keep this module read-only. If a repair is ever reconsidered, it must not
+ * write anything when the current ID is empty.
  */
 
 if ( ! defined( 'ABSPATH' ) && ! defined( 'MARGINAL_CORE_TESTS' ) ) {
@@ -15,7 +34,6 @@ if ( ! defined( 'ABSPATH' ) && ! defined( 'MARGINAL_CORE_TESTS' ) ) {
 const MARGINAL_CORE_MAINWP_ID_OPTION   = 'mainwp_child_uniqueId';
 const MARGINAL_CORE_MAINWP_KEY_OPTION  = 'mainwp_child_pubkey';
 const MARGINAL_CORE_MAINWP_ID_CONSTANT = 'MAINWP_CHILD_UNIQUEID';
-const MARGINAL_CORE_MAINWP_THROTTLE    = 'marginal_core_mainwp_checked';
 
 /**
  * Whether an ID is safe to send through MainWP's handshake.
@@ -26,78 +44,6 @@ const MARGINAL_CORE_MAINWP_THROTTLE    = 'marginal_core_mainwp_checked';
  */
 function marginal_core_is_safe_unique_id( $id ): bool {
 	return is_string( $id ) && 1 === preg_match( '/^[A-Za-z0-9]{8,64}$/', $id );
-}
-
-/**
- * Decide what to do about the current unique security ID.
- *
- * Pure. 'repair' writes a new ID, 'warn' surfaces a widget row, 'none' does
- * nothing.
- *
- * Two separate reasons forbid repair, and conflating them would hide a real
- * problem behind an apparent success:
- *
- * - $connected: rewriting a working ID disconnects the site, because the
- *   dashboard still holds the old value.
- * - ! $repairable: the effective ID comes from the MAINWP_CHILD_UNIQUEID
- *   constant, which MainWP reads in preference to the option. Writing the
- *   option there changes nothing at all — MainWP goes on using the constant —
- *   so a "repair" would report success and fix nothing. Correcting it means
- *   editing wp-config.php, which is not a plugin's business.
- *
- * @param mixed $id
- */
-function marginal_core_unique_id_action( bool $connected, $id, bool $repairable = true ): string {
-	if ( marginal_core_is_safe_unique_id( $id ) ) {
-		return 'none';
-	}
-
-	if ( $connected || ! $repairable ) {
-		return 'warn';
-	}
-
-	return 'repair';
-}
-
-/**
- * 32 alphanumeric characters. wp_generate_password() with both symbol flags
- * off should return exactly that character set, but its result also passes
- * through the `random_password` filter — a security or password-policy
- * plugin commonly injects symbols there. Writing an unvalidated result would
- * make the "repair" report success while leaving MainWP unable to connect,
- * with nothing warning about it.
- *
- * The generated value is therefore checked before use, retried a bounded
- * number of times against the same possibly-filtered source, and, if every
- * attempt is still unsafe, built locally by
- * marginal_core_generate_unique_id_locally() instead — a source no filter can
- * reach.
- */
-function marginal_core_generate_unique_id(): string {
-	for ( $attempt = 0; $attempt < 5; $attempt++ ) {
-		$candidate = wp_generate_password( 32, false, false );
-
-		if ( marginal_core_is_safe_unique_id( $candidate ) ) {
-			return $candidate;
-		}
-	}
-
-	return marginal_core_generate_unique_id_locally();
-}
-
-/**
- * Last-resort fallback: 32 alphanumeric characters built without
- * wp_generate_password(), so no `random_password` filter can reach it.
- */
-function marginal_core_generate_unique_id_locally(): string {
-	$chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	$id    = '';
-
-	for ( $i = 0; $i < 32; $i++ ) {
-		$id .= $chars[ random_int( 0, strlen( $chars ) - 1 ) ];
-	}
-
-	return $id;
 }
 
 function marginal_core_mainwp_is_connected(): bool {
@@ -114,8 +60,8 @@ function marginal_core_mainwp_is_connected(): bool {
  * test suite without changing behaviour for every later test.
  *
  * MainWP reads the constant in preference to the option, so we must too — a
- * value we read from the option while MainWP reads the constant is a value we
- * would "repair" without effect.
+ * value read from the option while MainWP reads the constant is not the
+ * value MainWP is actually using, and would misreport the site's real state.
  *
  * @param mixed $constant_value
  * @param mixed $option_value
@@ -140,51 +86,4 @@ function marginal_core_mainwp_unique_id(): string {
 		$has_constant ? constant( MARGINAL_CORE_MAINWP_ID_CONSTANT ) : null,
 		get_option( MARGINAL_CORE_MAINWP_ID_OPTION, '' )
 	);
-}
-
-/**
- * Whether the effective ID is one we could actually change.
- *
- * False when the constant is defined: the option we would write is not the
- * value MainWP reads.
- *
- * Documented limitation: MainWP also passes the ID through a
- * `mainwp_child_unique_id` filter, which no plugin can detect statically. A
- * site filtering that value will see the same "writes nothing" behaviour, and
- * there is no way to know in advance.
- */
-function marginal_core_mainwp_id_is_repairable(): bool {
-	return ! defined( MARGINAL_CORE_MAINWP_ID_CONSTANT );
-}
-
-/**
- * Repair the ID if, and only if, the site is not yet connected.
- *
- * Throttled, and skipped outright once a public key exists — so a connected
- * site costs one option read per admin load and nothing else, forever.
- */
-function marginal_core_mainwp_maybe_repair(): void {
-	if ( marginal_core_mainwp_is_connected() ) {
-		return;
-	}
-
-	if ( get_transient( MARGINAL_CORE_MAINWP_THROTTLE ) ) {
-		return;
-	}
-
-	set_transient( MARGINAL_CORE_MAINWP_THROTTLE, 1, 300 );
-
-	$action = marginal_core_unique_id_action(
-		false,
-		marginal_core_mainwp_unique_id(),
-		marginal_core_mainwp_id_is_repairable()
-	);
-
-	if ( 'repair' === $action ) {
-		update_option( MARGINAL_CORE_MAINWP_ID_OPTION, marginal_core_generate_unique_id() );
-	}
-}
-
-function marginal_core_mainwp_boot(): void {
-	add_action( 'admin_init', 'marginal_core_mainwp_maybe_repair' );
 }

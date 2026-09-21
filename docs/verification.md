@@ -19,15 +19,31 @@ These were confirmed by reading the relevant plugin/service source directly
 - **MainWP's constant precedence.** `MainWP_Helper::get_site_unique_id()`
   reads the `MAINWP_CHILD_UNIQUEID` constant in preference to the
   `mainwp_child_uniqueId` option, when that constant is defined. This is why
-  `marginal_core_mainwp_id_is_repairable()` refuses to "repair" an ID that
-  is constant-sourced — writing the option in that case would change nothing
-  MainWP actually reads, and reporting success would be false.
+  `marginal_core_mainwp_unique_id()` reads the constant first — reporting the
+  option's value while MainWP is actually using the constant would misreport
+  the site's real state.
 
 - **MainWP's own ID generator.** MainWP generates its unique ID with
-  `wp_generate_password( 12, false )` — already alphanumeric (no symbols),
-  which is consistent with the plugin's own repair value being alphanumeric
-  and with symbol-bearing IDs being something other than MainWP's own
-  default (hand-edited, migrated, or otherwise altered).
+  `wp_generate_password( 12, false )` — already alphanumeric (no symbols).
+  MainWP never produces a symbol-bearing ID itself, so a symbol-bearing ID
+  can only come from a human typing one, a host-set `MAINWP_CHILD_UNIQUEID`
+  constant, or an old MainWP version.
+
+- **The repair this plugin used to perform was removed, and should not come
+  back.** The `mainwp` module used to rewrite an "unsafe" unique ID on any
+  site not yet connected. That was a live bug: MainWP enforces the unique-ID
+  requirement only when the stored ID is **non-empty**
+  (`class-mainwp-connect.php:118` in MainWP Child) — an empty ID is MainWP's
+  own default and means the feature is off, not broken. The old repair
+  treated an empty ID as unsafe (the safety regex requires 8-64 characters)
+  and wrote a real one into that slot on every fresh, unconnected site,
+  which *enables* a requirement the Marginal dashboard does not know about —
+  the site's first connection attempt then fails with `REG_ERROR3`. Combined
+  with the point above (MainWP's own generator is already alphanumeric, so a
+  symbol-bearing ID is never something MainWP produced on its own), the
+  write was both harmful and pointless, and was deleted rather than fixed.
+  The module is now read-only: it detects and reports an unsafe, non-empty
+  ID, and never writes `mainwp_child_uniqueId`.
 
 - **UpdraftPlus's backup success field.** UpdraftPlus writes the `success`
   field of its last-backup record as `(error_count() == 0) ? 1 : 0`. That
@@ -46,13 +62,14 @@ These were confirmed by reading the relevant plugin/service source directly
 
 ## Verified by the unit suite (structural)
 
-The 137-test suite covers every decision function directly: the unique-ID
-safety regex and repair/warn/none decision table, the user-guard capability
-and deletion-backstop matrix (including the "0" login and case-folding
-edge cases), the backup-status state machine (missing/failed/stale/unknown/
-invalid/ok), the environment normalisation and declared/undeclared
-distinction, and the warning list and visibility filtering. See the test
-suite itself for the exhaustive list — it is not duplicated here.
+The unit suite covers every decision function directly: the unique-ID
+safety regex, constant-vs-option precedence, and connection-state read; the
+user-guard capability and deletion-backstop matrix (including the "0" login
+and case-folding edge cases); the backup-status state machine
+(missing/failed/stale/unknown/invalid/ok); the environment normalisation
+and declared/undeclared distinction; and the warning list and visibility
+filtering, including the unsafe-but-empty MainWP ID staying silent. See the
+test suite itself for the exhaustive list — it is not duplicated here.
 
 ## Not verified — needs a live WordPress site
 
@@ -67,9 +84,10 @@ install, MainWP dashboard, or GitHub release. They are the subject of
 - The dashboard widget's rendering for both a client administrator and a
   protected user, and the live triggering of each warning condition
   (`blog_public`, `WP_ENVIRONMENT_TYPE` present/absent).
-- The MainWP module's actual effect on a real `mainwp_child_uniqueId` value,
-  on both a disconnected and a connected site, and whether the connection
-  survives.
+- The MainWP module's detection of a real `mainwp_child_uniqueId` value on
+  both a disconnected and a connected site — confirming the warning appears
+  (and only appears) when it should. The module writes nothing, so there is
+  no connection-survival behaviour left to verify here.
 - White-label rendering on the real admin footer and wp-login.php screen.
 - The self-update channel end to end: a GitHub release with a `.zip` asset,
   Dashboard → Updates detecting it, installation succeeding, and the MainWP
