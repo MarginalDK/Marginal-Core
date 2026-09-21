@@ -141,9 +141,22 @@ function marginal_core_test_reset_hooks(): void {
 	$GLOBALS['marginal_core_hooks'] = array();
 }
 
+if ( ! function_exists( 'is_multisite' ) ) {
+	function is_multisite(): bool {
+		return (bool) ( $GLOBALS['marginal_core_multisite'] ?? false );
+	}
+}
+
+if ( ! function_exists( 'is_main_site' ) ) {
+	function is_main_site(): bool {
+		return (bool) ( $GLOBALS['marginal_core_main_site'] ?? true );
+	}
+}
+
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/modules.php';
 require_once __DIR__ . '/../inc/updater.php';
 require_once __DIR__ . '/../modules/hardening.php';
 require_once __DIR__ . '/../modules/rest.php';
+require_once __DIR__ . '/../modules/cron-fixes.php';

@@ -18,8 +18,9 @@ if ( ! defined( 'ABSPATH' ) && ! defined( 'MARGINAL_CORE_TESTS' ) ) {
  */
 function marginal_core_modules(): array {
 	return array(
-		'hardening' => 'hardening.php',
-		'rest'      => 'rest.php',
+		'hardening'   => 'hardening.php',
+		'rest'        => 'rest.php',
+		'cron-fixes'  => 'cron-fixes.php',
 	);
 }
 
