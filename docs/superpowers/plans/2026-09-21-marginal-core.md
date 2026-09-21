@@ -182,9 +182,11 @@ final class ConfigTest extends TestCase {
 	}
 
 	public function test_hyphenated_key_maps_to_underscored_constant(): void {
-		define( 'MARGINAL_CORE_BACKUP_MAX_AGE_DAYS', 14 );
+		// A deliberately fake key: PHP constants are process-wide, so defining
+		// a real one here would leak into every later test in the suite.
+		define( 'MARGINAL_CORE_FAKE_AGE_DAYS', 14 );
 
-		$this->assertSame( 14, marginal_core_config( 'backup-max-age-days', 7 ) );
+		$this->assertSame( 14, marginal_core_config( 'fake-age-days', 7 ) );
 	}
 
 	public function test_parses_comma_separated_list_with_whitespace(): void {
@@ -483,7 +485,7 @@ The version string here and in `MARGINAL_CORE_VERSION` must always match; a mism
  * Plugin Name: Marginal Core
  * Plugin URI:  https://github.com/MarginalDK/Marginal-Core
  * Description: Marginal agency baseline — hardening, MainWP fixes, white-labelling.
- * Version:     1.0.0
+ * Version:     0.9.0
  * Author:      Marginal
  * Author URI:  https://marginal.dk
  * Update URI:  https://github.com/MarginalDK/Marginal-Core
@@ -504,7 +506,7 @@ if ( defined( 'MARGINAL_CORE_VERSION' ) ) {
 	return;
 }
 
-define( 'MARGINAL_CORE_VERSION', '1.0.0' );
+define( 'MARGINAL_CORE_VERSION', '0.9.0' );
 define( 'MARGINAL_CORE_FILE', __FILE__ );
 define( 'MARGINAL_CORE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MARGINAL_CORE_BASENAME', plugin_basename( __FILE__ ) );
@@ -907,11 +909,11 @@ itself the same update forever."
 
 This is the spec's first verification item and the assumption the whole distribution model rests on. Do it now, before writing any module.
 
-1. Tag and push `v1.0.0`; confirm Actions attaches `marginal-core-1.0.0.zip` to the release.
+1. Tag and push `v0.9.0`; confirm Actions attaches `marginal-core-0.9.0.zip` to the release.
 2. Install that zip on a staging WordPress site.
-3. Bump the header and `MARGINAL_CORE_VERSION` to `1.0.1`, tag and push `v1.0.1`.
+3. Bump the header and `MARGINAL_CORE_VERSION` to `0.9.1`, tag and push `v0.9.1`.
 4. On staging, visit **Dashboard → Updates** and click "Check again".
-5. Expected: Marginal Core appears as an available update, and updating installs 1.0.1.
+5. Expected: Marginal Core appears as an available update, and updating installs 0.9.1.
 
 If the update does not appear, confirm in this order: the `Update URI` header is present in the *installed* copy; `MARGINAL_CORE_BASENAME` matches the installed path; the release has a `.zip` asset; and the site transient `marginal_core_latest_release` is not holding a cached `none`.
 
@@ -2184,7 +2186,7 @@ Pure logic for the widget, separated from rendering so the conditions are testab
 - Modify: `tests/bootstrap.php` (one `require_once`)
 
 **Interfaces:**
-- Consumes: `marginal_core_config()`, `marginal_core_is_safe_unique_id()`.
+- Consumes: nothing. `inc/status.php` is self-contained — every input arrives as a parameter or a fact-array key, which is what makes it testable with no stubs at all.
 - Produces:
   - `marginal_core_normalize_environment( $raw ): string` — pure.
   - `marginal_core_backup_status( $last_backup, int $max_age_days, int $now ): array` — pure; `array{state: string, time: ?int}` where state is `ok|stale|failed|missing`.
@@ -2979,7 +2981,7 @@ seven, so manifest and filesystem cannot drift."
 - Create: `docs/manual-checklist.md`
 - Modify: `docs/verification.md` (created in Task 3)
 - Modify: `README.md`
-- Modify: `marginal-core.php` and header (version bump to `1.0.0` final)
+- Modify: `marginal-core.php` (bump header **and** `MARGINAL_CORE_VERSION` from the `0.9.x` development series to `1.0.0` — the release workflow fails the build if the two disagree with the tag)
 
 - [ ] **Step 1: Write `docs/manual-checklist.md`**
 
