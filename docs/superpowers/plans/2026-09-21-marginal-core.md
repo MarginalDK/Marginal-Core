@@ -1457,15 +1457,18 @@ The reason this project exists. The repair rule is deliberately conservative, be
   - `marginal_core_mainwp_boot(): void`
   - Constants `MARGINAL_CORE_MAINWP_ID_OPTION`, `MARGINAL_CORE_MAINWP_KEY_OPTION`.
 
-- [ ] **Step 1: Verify the MainWP option names**
+- [ ] **Step 1: Read the verified facts about MainWP Child**
 
-Before writing code, confirm against an installed MainWP Child what the unique security ID and public key are stored as. On a connected staging child:
+Already confirmed against MainWP Child's published source (`github.com/mainwp/mainwp-child`), so no staging site is needed:
 
-```bash
-wp option list --search='mainwp_child*' --fields=option_name
-```
+- `mainwp_child_pubkey` is the option written on a completed handshake (`class-mainwp-connect.php:160`) and read to test connection (`class-mainwp-child.php:222,614`). Using it as the connection test is correct.
+- `mainwp_child_uniqueId` is the option holding the security ID (`class-mainwp-child.php:448`).
+- **MainWP's own generator is `wp_generate_password( 12, false )`** — alphanumeric already. MainWP never generates a symbol-bearing ID itself.
+- **The effective ID is not simply that option.** `MainWP_Helper::get_site_unique_id()` reads the `MAINWP_CHILD_UNIQUEID` **constant first**, falls back to the option, and then passes the result through a `mainwp_child_unique_id` filter.
 
-Expected: `mainwp_child_uniqueId` and `mainwp_child_pubkey`. If the names differ, use the real ones — they appear exactly twice in this task, as the two constants at the top of the module. Record what you found in `docs/verification.md`.
+That last fact changes this module's design, and is why the code below differs from a naive "rewrite the option" approach: **on a site where `MAINWP_CHILD_UNIQUEID` is defined, writing the option has no effect at all.** MainWP keeps using the constant. A repair that writes the option on such a site would report success and change nothing — the worst possible outcome, because it hides the problem.
+
+So the module reads the effective ID the way MainWP does, and only repairs when the value actually comes from the option. A constant-sourced bad ID is a `wp-config.php` edit, which no plugin should make on a client's behalf, so it is surfaced as a warning instead.
 
 - [ ] **Step 2: Add stubs to `tests/bootstrap.php`**
 
@@ -1585,6 +1588,20 @@ final class MainwpTest extends TestCase {
 		$this->assertSame( 'none', marginal_core_unique_id_action( true, 'aB3xY9zQ' ) );
 	}
 
+	public function test_unsafe_constant_sourced_id_only_warns_even_when_disconnected(): void {
+		// Writing the option cannot override MAINWP_CHILD_UNIQUEID, so a
+		// "repair" here would report success and change nothing.
+		$this->assertSame( 'warn', marginal_core_unique_id_action( false, 'bad&id', false ) );
+	}
+
+	public function test_safe_constant_sourced_id_still_does_nothing(): void {
+		$this->assertSame( 'none', marginal_core_unique_id_action( false, 'aB3xY9zQ', false ) );
+	}
+
+	public function test_repairable_defaults_to_true_for_backwards_compatible_calls(): void {
+		$this->assertSame( 'repair', marginal_core_unique_id_action( false, 'bad&id' ) );
+	}
+
 	public function test_generated_ids_are_safe_and_32_characters(): void {
 		for ( $i = 0; $i < 20; $i++ ) {
 			$id = marginal_core_generate_unique_id();
@@ -1631,6 +1648,14 @@ final class MainwpTest extends TestCase {
 		$this->assertTrue( marginal_core_is_safe_unique_id( $first ) );
 	}
 
+	public function test_unique_id_prefers_the_constant_over_the_option(): void {
+		$GLOBALS['marginal_core_options'][ MARGINAL_CORE_MAINWP_ID_OPTION ] = 'fromOption123456';
+
+		// The constant is not defined in this suite, so the option wins here.
+		$this->assertSame( 'fromOption123456', marginal_core_mainwp_unique_id() );
+		$this->assertTrue( marginal_core_mainwp_id_is_repairable() );
+	}
+
 	public function test_connection_state_reads_the_public_key(): void {
 		$this->assertFalse( marginal_core_mainwp_is_connected() );
 
@@ -1663,9 +1688,10 @@ if ( ! defined( 'ABSPATH' ) && ! defined( 'MARGINAL_CORE_TESTS' ) ) {
 	exit;
 }
 
-const MARGINAL_CORE_MAINWP_ID_OPTION  = 'mainwp_child_uniqueId';
-const MARGINAL_CORE_MAINWP_KEY_OPTION = 'mainwp_child_pubkey';
-const MARGINAL_CORE_MAINWP_THROTTLE   = 'marginal_core_mainwp_checked';
+const MARGINAL_CORE_MAINWP_ID_OPTION   = 'mainwp_child_uniqueId';
+const MARGINAL_CORE_MAINWP_KEY_OPTION  = 'mainwp_child_pubkey';
+const MARGINAL_CORE_MAINWP_ID_CONSTANT = 'MAINWP_CHILD_UNIQUEID';
+const MARGINAL_CORE_MAINWP_THROTTLE    = 'marginal_core_mainwp_checked';
 
 /**
  * Whether an ID is safe to send through MainWP's handshake.
@@ -1684,14 +1710,29 @@ function marginal_core_is_safe_unique_id( $id ): bool {
  * Pure. 'repair' writes a new ID, 'warn' surfaces a widget row, 'none' does
  * nothing.
  *
+ * Two separate reasons forbid repair, and conflating them would hide a real
+ * problem behind an apparent success:
+ *
+ * - $connected: rewriting a working ID disconnects the site, because the
+ *   dashboard still holds the old value.
+ * - ! $repairable: the effective ID comes from the MAINWP_CHILD_UNIQUEID
+ *   constant, which MainWP reads in preference to the option. Writing the
+ *   option there changes nothing at all — MainWP goes on using the constant —
+ *   so a "repair" would report success and fix nothing. Correcting it means
+ *   editing wp-config.php, which is not a plugin's business.
+ *
  * @param mixed $id
  */
-function marginal_core_unique_id_action( bool $connected, $id ): string {
+function marginal_core_unique_id_action( bool $connected, $id, bool $repairable = true ): string {
 	if ( marginal_core_is_safe_unique_id( $id ) ) {
 		return 'none';
 	}
 
-	return $connected ? 'warn' : 'repair';
+	if ( $connected || ! $repairable ) {
+		return 'warn';
+	}
+
+	return 'repair';
 }
 
 /**
@@ -1708,10 +1749,37 @@ function marginal_core_mainwp_is_connected(): bool {
 	return ! empty( $key );
 }
 
+/**
+ * The ID MainWP will actually use, resolved the way MainWP resolves it.
+ *
+ * MainWP_Helper::get_site_unique_id() prefers the constant over the option, so
+ * reading the option alone would report a value the site is not using.
+ */
 function marginal_core_mainwp_unique_id(): string {
+	if ( defined( MARGINAL_CORE_MAINWP_ID_CONSTANT ) ) {
+		$id = constant( MARGINAL_CORE_MAINWP_ID_CONSTANT );
+
+		return is_string( $id ) ? $id : '';
+	}
+
 	$id = get_option( MARGINAL_CORE_MAINWP_ID_OPTION, '' );
 
 	return is_string( $id ) ? $id : '';
+}
+
+/**
+ * Whether the effective ID is one we could actually change.
+ *
+ * False when the constant is defined: the option we would write is not the
+ * value MainWP reads.
+ *
+ * Documented limitation: MainWP also passes the ID through a
+ * `mainwp_child_unique_id` filter, which no plugin can detect statically. A
+ * site filtering that value will see the same "writes nothing" behaviour, and
+ * there is no way to know in advance.
+ */
+function marginal_core_mainwp_id_is_repairable(): bool {
+	return ! defined( MARGINAL_CORE_MAINWP_ID_CONSTANT );
 }
 
 /**
@@ -1731,7 +1799,13 @@ function marginal_core_mainwp_maybe_repair(): void {
 
 	set_transient( MARGINAL_CORE_MAINWP_THROTTLE, 1, 300 );
 
-	if ( 'repair' === marginal_core_unique_id_action( false, marginal_core_mainwp_unique_id() ) ) {
+	$action = marginal_core_unique_id_action(
+		false,
+		marginal_core_mainwp_unique_id(),
+		marginal_core_mainwp_id_is_repairable()
+	);
+
+	if ( 'repair' === $action ) {
 		update_option( MARGINAL_CORE_MAINWP_ID_OPTION, marginal_core_generate_unique_id() );
 	}
 }
@@ -1767,7 +1841,7 @@ In `inc/modules.php`, after the `cron-fixes` line:
 - [ ] **Step 8: Run tests to verify they pass**
 
 Run: `composer test`
-Expected: PASS, 55 tests (39 + 16 new).
+Expected: PASS, 72 tests (51 + 21 new).
 
 - [ ] **Step 9: Commit**
 
