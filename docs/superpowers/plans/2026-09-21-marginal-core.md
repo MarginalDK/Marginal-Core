@@ -3089,7 +3089,7 @@ seven, so manifest and filesystem cannot drift."
 - Create: `docs/manual-checklist.md`
 - Modify: `docs/verification.md` (created in Task 3)
 - Modify: `README.md`
-- Modify: `marginal-core.php` (bump header **and** `MARGINAL_CORE_VERSION` from the `0.9.x` development series to `1.0.0` — the release workflow fails the build if the two disagree with the tag)
+- The version stays at `0.9.0`. See the ruling under Handover: bumping to `1.0.0` now would strand the still-outstanding end-to-end update verification, which runs on the `0.9.x` series.
 
 - [ ] **Step 1: Write `docs/manual-checklist.md`**
 
@@ -3152,8 +3152,8 @@ actually running.
 Replace the status block with:
 
 ```markdown
-> **Status: v1.0.0.** Installed via MainWP; updates arrive through GitHub
-> releases. See
+> **Status: v0.9.0, pre-release.** Feature-complete and unit-tested, but not
+> yet verified on a live WordPress site. See
 > [`docs/superpowers/specs/2026-09-21-marginal-core-design.md`](docs/superpowers/specs/2026-09-21-marginal-core-design.md)
 > for the design and [`docs/manual-checklist.md`](docs/manual-checklist.md)
 > for the pre-release checks.
@@ -3175,13 +3175,7 @@ Expected: PASS, 98 tests, zero warnings, zero notices, zero risky.
 Run: `find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l | grep -v 'No syntax errors' || echo "all clean"`
 Expected: `all clean`.
 
-- [ ] **Step 5: Work the manual checklist on staging**
-
-Install the current build on the staging child site and complete every box in `docs/manual-checklist.md`. Record the results in `docs/verification.md`.
-
-Do not proceed to release with an unchecked box. If something fails, fix it, add a unit test reproducing it where the logic allows, and start the checklist again.
-
-- [ ] **Step 6: Commit and tag**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add docs/ README.md
@@ -3190,25 +3184,45 @@ git commit -m "Add manual checklist and release documentation
 The checklist covers what the unit suite structurally cannot: the REST
 deletion path, the WP-CLI escape hatch, and the two MainWP cases whose
 whole point is behaviour against a live connection."
-
-git tag v1.0.0
-git push origin main --tags
 ```
 
-- [ ] **Step 7: Verify the release built**
+## Handover — the steps that need a human
 
-Run: `gh release view v1.0.0 --repo MarginalDK/Marginal-Core`
-Expected: the release exists with `marginal-core-1.0.0.zip` attached.
+Everything below tags, pushes to a public repository, or needs a live
+WordPress site. None of it is done by the implementation run.
 
-- [ ] **Step 8: Roll out**
+**Ruling: the version stays at `0.9.0` through all of this.** The end-to-end
+update verification (Task 3, Step 9) is still outstanding and consumes the
+`v0.9.0` and `v0.9.1` tags. Bumping to `1.0.0` before that runs would strand
+it — there would be no free pre-release tag left to prove the update channel
+with, and proving it is the one thing the whole distribution model rests on.
+`1.0.0` is the last step, not the first.
 
-Deliberately slow at the start — the whole point of a manual update click.
+Run in this order:
 
-1. Staging site: already done via the checklist.
-2. One pilot client. Observe for a week: no client complaints, widget renders, MainWP still connected.
-3. The fleet, in batches, via MainWP.
+1. **Prove the update channel.** Tag `v0.9.0`, push, confirm GitHub Actions
+   attaches `marginal-core-0.9.0.zip` to the release. Install that zip on a
+   staging WordPress site. Bump the header and `MARGINAL_CORE_VERSION` to
+   `0.9.1`, tag `v0.9.1`, push. On staging, Dashboard → Updates → Check again
+   must show Marginal Core as an available update, and updating must install
+   0.9.1.
 
-Do not skip step 2. It is the only thing standing between a bad release and every client at once.
+   If it does not appear, check in this order: the `Update URI` header is
+   present in the *installed* copy; `MARGINAL_CORE_BASENAME` matches the
+   installed path; the release has a `.zip` asset; and the site transient
+   `marginal_core_latest_release` is not holding a cached `none`.
+
+2. **Work `docs/manual-checklist.md` on staging, end to end.** Do not skip the
+   REST deletion box — it is the one path the admin UI cannot tell you about.
+
+3. **Only once both pass:** bump the header and `MARGINAL_CORE_VERSION` to
+   `1.0.0`, tag `v1.0.0`, push. The release workflow fails the build if the
+   tag and the header disagree.
+
+4. **Roll out slowly.** One pilot client first, observed for a week — widget
+   renders, no client complaints, MainWP still connected. Then the fleet in
+   batches. The pilot is the only thing standing between a bad release and
+   every client at once, which is exactly why auto-updates are off.
 
 ---
 

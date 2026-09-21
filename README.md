@@ -4,9 +4,11 @@ Marginal's agency baseline for client WordPress sites: hardening, MainWP
 connection fixes, and white-labelling, in one plugin installed across the
 fleet and updated centrally.
 
-> **Status: design stage.** The spec is written and agreed; no plugin code
-> exists yet. See
-> [`docs/superpowers/specs/2026-09-21-marginal-core-design.md`](docs/superpowers/specs/2026-09-21-marginal-core-design.md).
+> **Status: v0.9.0, pre-release.** Feature-complete and unit-tested, but not
+> yet verified on a live WordPress site. See
+> [`docs/superpowers/specs/2026-09-21-marginal-core-design.md`](docs/superpowers/specs/2026-09-21-marginal-core-design.md)
+> for the design and [`docs/manual-checklist.md`](docs/manual-checklist.md)
+> for the pre-release checks.
 
 ## What it does
 
@@ -15,9 +17,9 @@ fleet and updated centrally.
 | `hardening` | Disables the dashboard file editor, XML-RPC, and the `X-Pingback` header |
 | `rest` | Blocks unauthenticated user enumeration via the REST API |
 | `cron-fixes` | Registers the `minute` schedule MainWP expects; silences MainWP notices on multisite sub-sites |
-| `mainwp` | Keeps the MainWP Child unique security ID free of symbols that break the connection |
+| `mainwp` | Regenerates the MainWP Child unique security ID when it contains symbols that break the connection — but only on a site that is not yet connected; a connected site is only flagged, never rewritten, since the dashboard would still hold the old value |
 | `user-guard` | Prevents client admins from deleting or demoting Marginal's account |
-| `widget` | Replaces default dashboard clutter with a Marginal status and support panel |
+| `widget` | Replaces default dashboard clutter with a Marginal status and support panel: backup freshness, MainWP connection, Patchstack, environment, and several other warning conditions |
 | `white-label` | Marginal branding on the login screen and admin footer |
 
 ## Design principles
@@ -38,7 +40,16 @@ define( 'MARGINAL_CORE_DISABLED_MODULES', 'white-label' );
 define( 'MARGINAL_CORE_PROTECTED_USERS', [ 'marginal' ] );
 define( 'MARGINAL_CORE_PROTECTION', true );
 define( 'MARGINAL_CORE_SUPPORT_URL', 'https://marginal.dk' );
+define( 'MARGINAL_CORE_BACKUP_MAX_AGE_DAYS', 7 );
 ```
+
+| Constant | Default | Effect |
+|---|---|---|
+| `MARGINAL_CORE_DISABLED_MODULES` | (none) | Comma-separated module slugs to skip loading. |
+| `MARGINAL_CORE_PROTECTED_USERS` | `[ 'marginal' ]` | Logins the user-guard module protects from deletion or demotion. |
+| `MARGINAL_CORE_PROTECTION` | `true` | Turns the user-guard module's protection off entirely when `false`. |
+| `MARGINAL_CORE_SUPPORT_URL` | `https://marginal.dk` | Support link used by the widget and the login/footer branding. |
+| `MARGINAL_CORE_BACKUP_MAX_AGE_DAYS` | `7` | Age at which the backup row warns. |
 
 Each also resolves through a `marginal_core_config_<key>` filter, so a
 site-specific mu-plugin can override it programmatically.
