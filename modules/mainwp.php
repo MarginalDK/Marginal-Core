@@ -74,21 +74,39 @@ function marginal_core_mainwp_is_connected(): bool {
 }
 
 /**
+ * Choose between a constant-supplied and an option-supplied ID.
+ *
+ * Pure, and separated from the `defined()`/`get_option()` calls precisely so
+ * this branch is testable: MAINWP_CHILD_UNIQUEID cannot be defined inside the
+ * test suite without changing behaviour for every later test.
+ *
+ * MainWP reads the constant in preference to the option, so we must too — a
+ * value we read from the option while MainWP reads the constant is a value we
+ * would "repair" without effect.
+ *
+ * @param mixed $constant_value
+ * @param mixed $option_value
+ */
+function marginal_core_pick_unique_id( bool $has_constant, $constant_value, $option_value ): string {
+	$value = $has_constant ? $constant_value : $option_value;
+
+	return is_string( $value ) ? $value : '';
+}
+
+/**
  * The ID MainWP will actually use, resolved the way MainWP resolves it.
  *
  * MainWP_Helper::get_site_unique_id() prefers the constant over the option, so
  * reading the option alone would report a value the site is not using.
  */
 function marginal_core_mainwp_unique_id(): string {
-	if ( defined( MARGINAL_CORE_MAINWP_ID_CONSTANT ) ) {
-		$id = constant( MARGINAL_CORE_MAINWP_ID_CONSTANT );
+	$has_constant = defined( MARGINAL_CORE_MAINWP_ID_CONSTANT );
 
-		return is_string( $id ) ? $id : '';
-	}
-
-	$id = get_option( MARGINAL_CORE_MAINWP_ID_OPTION, '' );
-
-	return is_string( $id ) ? $id : '';
+	return marginal_core_pick_unique_id(
+		$has_constant,
+		$has_constant ? constant( MARGINAL_CORE_MAINWP_ID_CONSTANT ) : null,
+		get_option( MARGINAL_CORE_MAINWP_ID_OPTION, '' )
+	);
 }
 
 /**

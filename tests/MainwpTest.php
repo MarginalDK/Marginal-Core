@@ -66,6 +66,10 @@ final class MainwpTest extends TestCase {
 		$this->assertSame( 'none', marginal_core_unique_id_action( false, 'aB3xY9zQ', false ) );
 	}
 
+	public function test_connected_and_non_repairable_warns(): void {
+		$this->assertSame( 'warn', marginal_core_unique_id_action( true, 'bad&id', false ) );
+	}
+
 	public function test_repairable_defaults_to_true_for_backwards_compatible_calls(): void {
 		$this->assertSame( 'repair', marginal_core_unique_id_action( false, 'bad&id' ) );
 	}
@@ -122,6 +126,38 @@ final class MainwpTest extends TestCase {
 		// The constant is not defined in this suite, so the option wins here.
 		$this->assertSame( 'fromOption123456', marginal_core_mainwp_unique_id() );
 		$this->assertTrue( marginal_core_mainwp_id_is_repairable() );
+	}
+
+	public function test_pick_unique_id_prefers_the_constant_when_present(): void {
+		// The assertion that actually matters: MAINWP_CHILD_UNIQUEID cannot be
+		// define()d inside the suite without poisoning every later test, so
+		// this is the only place the constant-wins branch is exercised.
+		$this->assertSame(
+			'fromConstant1234',
+			marginal_core_pick_unique_id( true, 'fromConstant1234', 'fromOption12345678' )
+		);
+	}
+
+	public function test_pick_unique_id_keeps_an_unsafe_constant_over_a_safe_option(): void {
+		// A regression that preferred the option here would look healthy
+		// while the site is actually broken, because MainWP is still reading
+		// the unsafe constant value.
+		$this->assertSame(
+			'bad&id',
+			marginal_core_pick_unique_id( true, 'bad&id', 'aB3xY9zQaB3xY9zQaB3xY9zQaB3xY9zQ' )
+		);
+	}
+
+	public function test_pick_unique_id_falls_back_to_the_option_when_no_constant(): void {
+		$this->assertSame(
+			'fromOption12345678',
+			marginal_core_pick_unique_id( false, 'fromConstant1234', 'fromOption12345678' )
+		);
+	}
+
+	public function test_pick_unique_id_treats_non_string_input_as_empty(): void {
+		$this->assertSame( '', marginal_core_pick_unique_id( true, null, 'fromOption12345678' ) );
+		$this->assertSame( '', marginal_core_pick_unique_id( false, 'fromConstant1234', null ) );
 	}
 
 	public function test_connection_state_reads_the_public_key(): void {
