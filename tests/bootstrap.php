@@ -22,3 +22,4 @@ if ( ! function_exists( 'apply_filters' ) ) {
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/modules.php';
+require_once __DIR__ . '/../inc/updater.php';

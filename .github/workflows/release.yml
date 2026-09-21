@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify tag matches the plugin header
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          HEADER=$(grep -m1 '^ \* Version:' marginal-core.php | awk '{print $3}')
+          if [ "$VERSION" != "$HEADER" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match plugin header version $HEADER"
+            exit 1
+          fi
+
+      - name: Build plugin zip
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p build/marginal-core
+          rsync -a --exclude-from=.distignore ./ build/marginal-core/
+          cd build && zip -rq "marginal-core-${VERSION}.zip" marginal-core
+
+      - name: Attach zip to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/marginal-core-*.zip
+          generate_release_notes: true
