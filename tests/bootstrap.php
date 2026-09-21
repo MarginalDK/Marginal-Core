@@ -161,13 +161,6 @@ if ( ! function_exists( 'get_option' ) ) {
 	}
 }
 
-if ( ! function_exists( 'update_option' ) ) {
-	function update_option( string $name, $value ): bool {
-		$GLOBALS['marginal_core_options'][ $name ] = $value;
-
-		return true;
-	}
-}
 
 $GLOBALS['marginal_core_users'] = array();
 
