@@ -57,9 +57,40 @@ function marginal_core_guard_blocks(
 		return false;
 	}
 
-	$protected = array_map( 'strtolower', $protected_logins );
+	$protected = array_map( 'marginal_core_guard_fold', $protected_logins );
 
-	return in_array( strtolower( $target_login ), $protected, true );
+	return in_array( marginal_core_guard_fold( $target_login ), $protected, true );
+}
+
+/**
+ * Case-fold a login for comparison.
+ *
+ * mb_strtolower where available: strtolower() is byte-oriented and would
+ * leave a non-ASCII login uncased, silently failing the protection match.
+ */
+function marginal_core_guard_fold( string $login ): string {
+	return function_exists( 'mb_strtolower' ) ? mb_strtolower( $login, 'UTF-8' ) : strtolower( $login );
+}
+
+/**
+ * Strip empty entries from a raw login list.
+ *
+ * A bare array_filter() treats the string "0" as falsy and would drop it,
+ * so a configured login of literally "0" could never be protected. Only an
+ * empty string means "no login here".
+ *
+ * @param string[] $logins
+ * @return string[]
+ */
+function marginal_core_guard_clean_logins( array $logins ): array {
+	return array_values(
+		array_filter(
+			$logins,
+			static function ( $login ) {
+				return '' !== $login;
+			}
+		)
+	);
 }
 
 /**
@@ -72,13 +103,13 @@ function marginal_core_protected_logins(): array {
 		$logins = array( (string) $logins );
 	}
 
-	return array_values( array_filter( array_map( 'strval', $logins ) ) );
+	return marginal_core_guard_clean_logins( array_map( 'strval', $logins ) );
 }
 
 function marginal_core_is_protected_login( string $login ): bool {
-	$protected = array_map( 'strtolower', marginal_core_protected_logins() );
+	$protected = array_map( 'marginal_core_guard_fold', marginal_core_protected_logins() );
 
-	return in_array( strtolower( $login ), $protected, true );
+	return in_array( marginal_core_guard_fold( $login ), $protected, true );
 }
 
 function marginal_core_guard_protection_enabled(): bool {

@@ -129,4 +129,76 @@ final class UserGuardTest extends TestCase {
 		$this->assertSame( array( 'marginal_core_guard_row_actions' ), marginal_core_test_hooks( 'user_row_actions' ) );
 		$this->assertSame( array( 'marginal_core_guard_block_delete' ), marginal_core_test_hooks( 'delete_user' ) );
 	}
+
+	// -- marginal_core_guard_block_delete(): the unconditional backstop -----
+	//
+	// Registration alone (test_boot_registers_its_hooks above) does not
+	// execute this function's body. It is the layer that still holds when
+	// map_meta_cap is bypassed by a bulk-delete path that skips a
+	// per-target capability check, so its branches need direct coverage.
+
+	public function test_block_delete_dies_for_a_protected_user(): void {
+		$user             = new stdClass();
+		$user->ID         = 1;
+		$user->user_login = 'marginal';
+
+		$GLOBALS['marginal_core_users'][1] = $user;
+
+		$this->expectException( MarginalCoreDied::class );
+		$this->expectExceptionMessageMatches( '/Marginal/' );
+
+		marginal_core_guard_block_delete( 1 );
+	}
+
+	public function test_block_delete_does_not_die_for_an_unprotected_user(): void {
+		$user             = new stdClass();
+		$user->ID         = 3;
+		$user->user_login = 'client-editor';
+
+		$GLOBALS['marginal_core_users'][3] = $user;
+
+		$died = false;
+
+		try {
+			marginal_core_guard_block_delete( 3 );
+		} catch ( MarginalCoreDied $e ) {
+			$died = true;
+		}
+
+		$this->assertFalse( $died, 'Deleting an unprotected user must not be blocked.' );
+	}
+
+	public function test_block_delete_does_not_die_when_no_user_matches(): void {
+		$died = false;
+
+		try {
+			marginal_core_guard_block_delete( 999 );
+		} catch ( MarginalCoreDied $e ) {
+			$died = true;
+		}
+
+		$this->assertFalse( $died, 'A user id with no matching account must not trigger the backstop.' );
+	}
+
+	// -- marginal_core_guard_fold(): case-folding for comparison ------------
+
+	public function test_guard_fold_lowercases_an_ascii_login(): void {
+		$this->assertSame( 'marginal', marginal_core_guard_fold( 'MARGINAL' ) );
+	}
+
+	// -- marginal_core_guard_clean_logins(): "0" is a valid login -----------
+
+	public function test_clean_logins_keeps_the_literal_string_zero(): void {
+		$this->assertSame(
+			array( '0', 'marginal' ),
+			marginal_core_guard_clean_logins( array( '0', '', 'marginal' ) )
+		);
+	}
+
+	public function test_clean_logins_drops_empty_strings(): void {
+		$this->assertSame(
+			array( 'marginal' ),
+			marginal_core_guard_clean_logins( array( '', 'marginal', '' ) )
+		);
+	}
 }

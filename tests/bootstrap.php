@@ -204,6 +204,26 @@ if ( ! function_exists( 'get_userdata' ) ) {
 	}
 }
 
+if ( ! class_exists( 'MarginalCoreDied' ) ) {
+	/**
+	 * Sentinel thrown by the wp_die() stub, so a test can assert that
+	 * execution was halted rather than merely that a function was called.
+	 */
+	class MarginalCoreDied extends RuntimeException {}
+}
+
+if ( ! function_exists( 'wp_die' ) ) {
+	function wp_die( $message = '', $title = '', $args = array() ) {
+		throw new MarginalCoreDied( is_string( $message ) ? $message : '' );
+	}
+}
+
+if ( ! function_exists( 'esc_html' ) ) {
+	function esc_html( string $text ): string {
+		return htmlspecialchars( $text, ENT_QUOTES );
+	}
+}
+
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/modules.php';
