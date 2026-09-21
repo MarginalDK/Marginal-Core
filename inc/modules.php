@@ -24,6 +24,7 @@ function marginal_core_modules(): array {
 		'mainwp'      => 'mainwp.php',
 		'user-guard'  => 'user-guard.php',
 		'widget'      => 'widget.php',
+		'white-label' => 'white-label.php',
 	);
 }
 

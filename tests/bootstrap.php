@@ -224,6 +224,12 @@ if ( ! function_exists( 'esc_html' ) ) {
 	}
 }
 
+if ( ! function_exists( 'esc_url' ) ) {
+	function esc_url( string $url ): string {
+		return $url;
+	}
+}
+
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/modules.php';
@@ -234,3 +240,4 @@ require_once __DIR__ . '/../modules/cron-fixes.php';
 require_once __DIR__ . '/../modules/mainwp.php';
 require_once __DIR__ . '/../modules/user-guard.php';
 require_once __DIR__ . '/../inc/status.php';
+require_once __DIR__ . '/../modules/white-label.php';
