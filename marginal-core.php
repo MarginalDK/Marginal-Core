@@ -33,6 +33,7 @@ define( 'MARGINAL_CORE_SLUG', 'marginal-core' );
 require_once MARGINAL_CORE_DIR . 'inc/config.php';
 require_once MARGINAL_CORE_DIR . 'inc/modules.php';
 require_once MARGINAL_CORE_DIR . 'inc/updater.php';
+require_once MARGINAL_CORE_DIR . 'inc/status.php';
 
 register_activation_hook(
 	MARGINAL_CORE_FILE,

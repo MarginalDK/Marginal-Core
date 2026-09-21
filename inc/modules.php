@@ -23,6 +23,7 @@ function marginal_core_modules(): array {
 		'cron-fixes'  => 'cron-fixes.php',
 		'mainwp'      => 'mainwp.php',
 		'user-guard'  => 'user-guard.php',
+		'widget'      => 'widget.php',
 	);
 }
 
