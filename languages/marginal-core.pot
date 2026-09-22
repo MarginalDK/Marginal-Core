@@ -177,11 +177,11 @@ msgid "Marginal — site care and protection"
 msgstr ""
 
 #. translators: %s: the maintained-by link, already built and escaped.
-#: modules/white-label.php:30
+#: modules/white-label.php:27
 msgid "Maintained and managed by %s"
 msgstr ""
 
-#: modules/white-label.php:38 modules/user-guard.php:179
+#: modules/white-label.php:35 modules/user-guard.php:179
 msgid "Managed by Marginal"
 msgstr ""
 

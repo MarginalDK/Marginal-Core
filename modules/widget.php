@@ -184,7 +184,7 @@ function marginal_core_widget_render(): void {
 		<div style="background:#f8fafc;padding:12px;border-radius:6px;border:1px solid #e2e8f0;">
 			<div style="font-weight:600;margin-bottom:4px;color:#0f172a;"><?php echo esc_html__( 'Need assistance or site changes?', 'marginal-core' ); ?></div>
 			<div style="color:#64748b;font-size:12px;margin-bottom:10px;"><?php echo esc_html__( 'This site is maintained by Marginal.', 'marginal-core' ); ?></div>
-			<a href="<?php echo esc_url( (string) marginal_core_config( 'support_url', 'https://marginal.dk' ) ); ?>"
+			<a href="<?php echo esc_url( marginal_core_support_link( 'widget' ) ); ?>"
 				target="_blank" rel="noopener"
 				style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:6px 12px;border-radius:4px;font-weight:600;font-size:12px;">
 				<?php echo esc_html__( 'Contact support', 'marginal-core' ); ?> &rarr;

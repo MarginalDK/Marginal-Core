@@ -16,7 +16,10 @@ final class WhiteLabelTest extends TestCase {
 	}
 
 	public function test_login_header_url_is_the_support_url(): void {
-		$this->assertSame( 'https://marginal.dk', marginal_core_login_header_url() );
+		$url = marginal_core_login_header_url();
+
+		$this->assertStringStartsWith( 'https://marginal.dk', $url );
+		$this->assertStringContainsString( 'utm_content=login', $url );
 	}
 
 	public function test_login_header_text_names_marginal(): void {

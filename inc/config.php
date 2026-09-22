@@ -56,3 +56,45 @@ function marginal_core_module_enabled( string $slug ): bool {
 
 	return ! in_array( $slug, $disabled, true );
 }
+
+/**
+ * UTM parameters for a support link.
+ *
+ * Pure. $placement distinguishes the three places a client can click through
+ * from, so the agency can tell a dashboard click from a login-screen one.
+ *
+ * @return array<string,string>
+ */
+function marginal_core_utm_args( string $host, string $placement ): array {
+	$args = array(
+		'utm_source'   => '' !== $host ? $host : 'unknown',
+		'utm_medium'   => 'wp-admin',
+		'utm_campaign' => 'marginal-core',
+	);
+
+	if ( '' !== $placement ) {
+		$args['utm_content'] = $placement;
+	}
+
+	return $args;
+}
+
+/**
+ * Build the support link shown to a client, tagged with UTM parameters.
+ *
+ * Lives here (not in modules/white-label.php) so both the widget and the
+ * white-label module can call it without the widget depending on a module
+ * that may be disabled. See modules/widget.php for why that duplication
+ * used to exist and why it still must not turn into a hard dependency.
+ */
+function marginal_core_support_link( string $placement = '' ): string {
+	$base = (string) marginal_core_config( 'support_url', 'https://marginal.dk' );
+	$host = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+
+	return apply_filters(
+		'marginal_core_support_link',
+		add_query_arg( marginal_core_utm_args( $host, $placement ), $base ),
+		$placement,
+		$base
+	);
+}

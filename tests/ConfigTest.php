@@ -60,4 +60,37 @@ final class ConfigTest extends TestCase {
 	public function test_module_enabled_by_default(): void {
 		$this->assertTrue( marginal_core_module_enabled( 'hardening' ) );
 	}
+
+	public function test_utm_args_always_carries_the_three_fixed_params(): void {
+		$this->assertSame(
+			array(
+				'utm_source'   => 'client-site.example',
+				'utm_medium'   => 'wp-admin',
+				'utm_campaign' => 'marginal-core',
+				'utm_content'  => 'widget',
+			),
+			marginal_core_utm_args( 'client-site.example', 'widget' )
+		);
+	}
+
+	public function test_utm_args_omits_content_when_placement_is_empty(): void {
+		$args = marginal_core_utm_args( 'client-site.example', '' );
+
+		$this->assertArrayNotHasKey( 'utm_content', $args );
+		$this->assertSame( 'client-site.example', $args['utm_source'] );
+		$this->assertSame( 'wp-admin', $args['utm_medium'] );
+		$this->assertSame( 'marginal-core', $args['utm_campaign'] );
+	}
+
+	public function test_utm_args_includes_content_when_placement_given(): void {
+		$this->assertArrayHasKey( 'utm_content', marginal_core_utm_args( 'client-site.example', 'footer' ) );
+		$this->assertSame( 'login', marginal_core_utm_args( 'client-site.example', 'login' )['utm_content'] );
+	}
+
+	public function test_utm_args_falls_back_to_unknown_for_an_empty_host(): void {
+		$args = marginal_core_utm_args( '', 'widget' );
+
+		$this->assertSame( 'unknown', $args['utm_source'] );
+		$this->assertNotSame( '', $args['utm_source'] );
+	}
 }

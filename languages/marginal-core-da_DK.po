@@ -25,7 +25,7 @@ msgstr "Fejlfinding (debug) er slået til i produktion."
 #. translators: %s: the detected environment name (e.g. "staging").
 #: inc/status.php:145
 msgid "This is the %s environment, not the live site."
-msgstr "Dette er %s-miljøet, ikke det live website."
+msgstr "Dette er %s-miljøet, ikke live website."
 
 #: inc/status.php:154
 msgid "No backups have been recorded for this site."
@@ -98,7 +98,7 @@ msgstr "Ukendt"
 
 #: modules/widget.php:118
 msgid "not the live site"
-msgstr "ikke det live website"
+msgstr "ikke live website"
 
 #: modules/widget.php:125
 msgid "Firewall active"
@@ -177,11 +177,11 @@ msgid "Marginal — site care and protection"
 msgstr "Marginal — drift og sikkerhed"
 
 #. translators: %s: the maintained-by link, already built and escaped.
-#: modules/white-label.php:30
+#: modules/white-label.php:27
 msgid "Maintained and managed by %s"
 msgstr "Vedligeholdes og driftes af %s"
 
-#: modules/white-label.php:38 modules/user-guard.php:179
+#: modules/white-label.php:35 modules/user-guard.php:179
 msgid "Managed by Marginal"
 msgstr "Administreret af Marginal"
 

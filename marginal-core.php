@@ -3,7 +3,7 @@
  * Plugin Name: Marginal Core
  * Plugin URI:  https://github.com/MarginalDK/Marginal-Core
  * Description: Marginal agency baseline — hardening, MainWP checks, white-labelling.
- * Version:     0.9.0
+ * Version:     0.9.1
  * Author:      Marginal
  * Author URI:  https://marginal.dk
  * Update URI:  https://github.com/MarginalDK/Marginal-Core
@@ -26,7 +26,7 @@ if ( defined( 'MARGINAL_CORE_VERSION' ) ) {
 	return;
 }
 
-define( 'MARGINAL_CORE_VERSION', '0.9.0' );
+define( 'MARGINAL_CORE_VERSION', '0.9.1' );
 define( 'MARGINAL_CORE_FILE', __FILE__ );
 define( 'MARGINAL_CORE_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MARGINAL_CORE_BASENAME', plugin_basename( __FILE__ ) );

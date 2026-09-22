@@ -197,6 +197,54 @@ if ( ! function_exists( 'esc_url' ) ) {
 }
 
 /*
+ * marginal_core_support_link() (inc/config.php) is reachable from both the
+ * widget and the white-label module's already-loaded tests, so its three
+ * WordPress dependencies need real-enough stand-ins here, not just in a
+ * manual harness. home_url() is fixed to a single fake site host; the other
+ * two mirror the real functions' behaviour closely enough for query-string
+ * building.
+ */
+
+$GLOBALS['marginal_core_test_home_url'] = 'https://example.test';
+
+if ( ! function_exists( 'home_url' ) ) {
+	function home_url( string $path = '' ): string {
+		return rtrim( (string) $GLOBALS['marginal_core_test_home_url'], '/' ) . $path;
+	}
+}
+
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	function wp_parse_url( string $url, int $component = -1 ) {
+		return parse_url( $url, $component );
+	}
+}
+
+if ( ! function_exists( 'add_query_arg' ) ) {
+	/**
+	 * Covers only the array-of-args + url form that
+	 * marginal_core_support_link() uses.
+	 */
+	function add_query_arg( array $args, string $url ): string {
+		$parts = parse_url( $url );
+		$query = array();
+
+		if ( isset( $parts['query'] ) ) {
+			parse_str( $parts['query'], $query );
+		}
+
+		$query = array_merge( $query, $args );
+
+		$rebuilt  = isset( $parts['scheme'] ) ? $parts['scheme'] . '://' : '';
+		$rebuilt .= $parts['host'] ?? '';
+		$rebuilt .= isset( $parts['port'] ) ? ':' . $parts['port'] : '';
+		$rebuilt .= $parts['path'] ?? '';
+		$rebuilt .= ! empty( $query ) ? '?' . http_build_query( $query ) : '';
+
+		return $rebuilt;
+	}
+}
+
+/*
  * Translation stubs, identity functions like the rest of this file. Real
  * WordPress would look the string up against the loaded text domain; the
  * suite has no domain loaded and asserts against the English source text

@@ -4,7 +4,7 @@ Marginal's agency baseline for client WordPress sites: hardening, MainWP
 connection checks, and white-labelling, in one plugin installed across the
 fleet and updated centrally.
 
-> **Status: v0.9.0, pre-release.** Feature-complete and unit-tested, but not
+> **Status: v0.9.1, pre-release.** Feature-complete and unit-tested, but not
 > yet verified on a live WordPress site. See
 > [`docs/superpowers/specs/2026-09-21-marginal-core-design.md`](docs/superpowers/specs/2026-09-21-marginal-core-design.md)
 > for the design and [`docs/manual-checklist.md`](docs/manual-checklist.md)
