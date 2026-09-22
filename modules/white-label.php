@@ -19,10 +19,15 @@ function marginal_core_support_url(): string {
 }
 
 function marginal_core_admin_footer_text(): string {
-	return sprintf(
-		'Maintained and managed by <a href="%s" target="_blank" rel="noopener">Marginal</a>',
+	// The anchor is built and escaped here so the translated string never
+	// carries markup — translators handle "Maintained and managed by %s"
+	// only, never an <a> tag.
+	$link = sprintf(
+		'<a href="%s" target="_blank" rel="noopener">Marginal</a>',
 		esc_url( marginal_core_support_url() )
 	);
+
+	return sprintf( __( 'Maintained and managed by %s', 'marginal-core' ), $link );
 }
 
 function marginal_core_login_header_url(): string {
@@ -30,7 +35,7 @@ function marginal_core_login_header_url(): string {
 }
 
 function marginal_core_login_header_text(): string {
-	return 'Managed by Marginal';
+	return __( 'Managed by Marginal', 'marginal-core' );
 }
 
 function marginal_core_white_label_boot(): void {

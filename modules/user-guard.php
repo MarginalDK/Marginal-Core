@@ -174,7 +174,10 @@ function marginal_core_guard_row_actions( array $actions, $user ): array {
 
 	unset( $actions['delete'], $actions['remove'] );
 
-	$actions['marginal'] = '<span style="color:#64748b;">Managed by Marginal</span>';
+	$actions['marginal'] = sprintf(
+		'<span style="color:#64748b;">%s</span>',
+		esc_html__( 'Managed by Marginal', 'marginal-core' )
+	);
 
 	return $actions;
 }
@@ -198,7 +201,7 @@ function marginal_core_guard_block_delete( int $user_id ): void {
 	}
 
 	wp_die(
-		esc_html( 'This account is managed by Marginal and cannot be deleted. Contact Marginal if it needs to be removed.' ),
+		esc_html( __( 'This account is managed by Marginal and cannot be deleted. Contact Marginal if it needs to be removed.', 'marginal-core' ) ),
 		'',
 		array( 'back_link' => true )
 	);

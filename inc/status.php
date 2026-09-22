@@ -122,7 +122,7 @@ function marginal_core_warnings( array $facts ): array {
 		$warnings[] = array(
 			'id'            => 'search-engines',
 			'level'         => 'alert',
-			'text'          => 'Search engines are blocked from indexing this site.',
+			'text'          => __( 'Search engines are blocked from indexing this site.', 'marginal-core' ),
 			'marginal_only' => false,
 		);
 	}
@@ -131,7 +131,7 @@ function marginal_core_warnings( array $facts ): array {
 		$warnings[] = array(
 			'id'            => 'debug',
 			'level'         => 'alert',
-			'text'          => 'Debug mode is on in production.',
+			'text'          => __( 'Debug mode is on in production.', 'marginal-core' ),
 			'marginal_only' => false,
 		);
 	}
@@ -142,7 +142,7 @@ function marginal_core_warnings( array $facts ): array {
 		$warnings[] = array(
 			'id'            => 'environment',
 			'level'         => 'notice',
-			'text'          => sprintf( 'This is the %s environment, not the live site.', $environment ),
+			'text'          => sprintf( __( 'This is the %s environment, not the live site.', 'marginal-core' ), $environment ),
 			'marginal_only' => false,
 		);
 	}
@@ -151,11 +151,11 @@ function marginal_core_warnings( array $facts ): array {
 
 	if ( 'ok' !== $backup_state ) {
 		$texts = array(
-			'missing' => 'No backups have been recorded for this site.',
-			'failed'  => 'The most recent backup did not complete.',
-			'stale'   => 'The most recent backup is older than expected.',
-			'unknown' => 'The most recent backup did not record whether it succeeded.',
-			'invalid' => 'The most recent backup is dated in the future, so its age cannot be trusted.',
+			'missing' => __( 'No backups have been recorded for this site.', 'marginal-core' ),
+			'failed'  => __( 'The most recent backup did not complete.', 'marginal-core' ),
+			'stale'   => __( 'The most recent backup is older than expected.', 'marginal-core' ),
+			'unknown' => __( 'The most recent backup did not record whether it succeeded.', 'marginal-core' ),
+			'invalid' => __( 'The most recent backup is dated in the future, so its age cannot be trusted.', 'marginal-core' ),
 		);
 
 		$warnings[] = array(
@@ -183,8 +183,8 @@ function marginal_core_warnings( array $facts ): array {
 			'id'            => 'mainwp-id',
 			'level'         => 'warn',
 			'text'          => $connected
-				? 'The MainWP security ID contains unsafe characters. Correct it in MainWP\'s own settings on this child site, then update the value stored on the Marginal dashboard to match.'
-				: 'The MainWP security ID contains unsafe characters and the site is disconnected. Correct it in MainWP\'s own settings on this child site, then update the value stored on the Marginal dashboard to match.',
+				? __( 'The MainWP security ID contains unsafe characters. Correct it in MainWP\'s own settings on this child site, then update the value stored on the Marginal dashboard to match.', 'marginal-core' )
+				: __( 'The MainWP security ID contains unsafe characters and the site is disconnected. Correct it in MainWP\'s own settings on this child site, then update the value stored on the Marginal dashboard to match.', 'marginal-core' ),
 			'marginal_only' => true,
 		);
 	}
@@ -193,7 +193,7 @@ function marginal_core_warnings( array $facts ): array {
 		$warnings[] = array(
 			'id'            => 'environment-undeclared',
 			'level'         => 'warn',
-			'text'          => 'WP_ENVIRONMENT_TYPE is not set, so this site reports as production whether it is or not.',
+			'text'          => __( 'WP_ENVIRONMENT_TYPE is not set, so this site reports as production whether it is or not.', 'marginal-core' ),
 			'marginal_only' => true,
 		);
 	}
@@ -229,8 +229,10 @@ function marginal_core_visible_warnings( array $warnings, bool $is_marginal_view
  */
 function marginal_core_summary_text( int $count ): string {
 	if ( $count < 1 ) {
-		return 'Everything looks good';
+		return __( 'Everything looks good', 'marginal-core' );
 	}
 
-	return 1 === $count ? '1 item needs attention' : sprintf( '%d items need attention', $count );
+	return 1 === $count
+		? __( '1 item needs attention', 'marginal-core' )
+		: sprintf( __( '%d items need attention', 'marginal-core' ), $count );
 }

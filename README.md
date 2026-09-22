@@ -73,6 +73,16 @@ update the fleet from Bastion.
 WordPress auto-updates are deliberately not enabled — the click stays manual so
 a bad release reaches the pilot site rather than every client at once.
 
+## Language
+
+The plugin is translatable and ships Danish. The site's own admin language
+decides which is shown — a Danish site gets Danish, an English one gets English.
+
+- `languages/marginal-core-da_DK.po` — edit this to revise the Danish
+- `languages/marginal-core-da_DK.mo` — the compiled file WordPress reads;
+  regenerate with `msgfmt languages/marginal-core-da_DK.po -o languages/marginal-core-da_DK.mo`
+- `languages/marginal-core.pot` — template for adding another language
+
 ## Licence
 
 Proprietary. © Marginal.

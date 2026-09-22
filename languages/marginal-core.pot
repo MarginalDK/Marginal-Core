@@ -1,0 +1,190 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Marginal Core 0.9.0\n"
+"Report-Msgid-Bugs-To: https://github.com/MarginalDK/Marginal-Core/issues\n"
+"POT-Creation-Date: 2026-09-21T00:00:00+00:00\n"
+"PO-Revision-Date: 2026-09-21T00:00:00+00:00\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: manual\n"
+"X-Domain: marginal-core\n"
+
+#: inc/status.php:125
+msgid "Search engines are blocked from indexing this site."
+msgstr ""
+
+#: inc/status.php:134
+msgid "Debug mode is on in production."
+msgstr ""
+
+#. translators: %s: the detected environment name (e.g. "staging").
+#: inc/status.php:145
+msgid "This is the %s environment, not the live site."
+msgstr ""
+
+#: inc/status.php:154
+msgid "No backups have been recorded for this site."
+msgstr ""
+
+#: inc/status.php:155
+msgid "The most recent backup did not complete."
+msgstr ""
+
+#: inc/status.php:156
+msgid "The most recent backup is older than expected."
+msgstr ""
+
+#: inc/status.php:157
+msgid "The most recent backup did not record whether it succeeded."
+msgstr ""
+
+#: inc/status.php:158
+msgid "The most recent backup is dated in the future, so its age cannot be trusted."
+msgstr ""
+
+#: inc/status.php:186
+msgid "The MainWP security ID contains unsafe characters. Correct it in MainWP's own settings on this child site, then update the value stored on the Marginal dashboard to match."
+msgstr ""
+
+#: inc/status.php:187
+msgid "The MainWP security ID contains unsafe characters and the site is disconnected. Correct it in MainWP's own settings on this child site, then update the value stored on the Marginal dashboard to match."
+msgstr ""
+
+#: inc/status.php:196
+msgid "WP_ENVIRONMENT_TYPE is not set, so this site reports as production whether it is or not."
+msgstr ""
+
+#: inc/status.php:232
+msgid "Everything looks good"
+msgstr ""
+
+#: inc/status.php:236
+msgid "1 item needs attention"
+msgstr ""
+
+#. translators: %d: number of warnings the widget is showing.
+#: inc/status.php:237
+msgid "%d items need attention"
+msgstr ""
+
+#: modules/widget.php:96
+msgid "Never run"
+msgstr ""
+
+#: modules/widget.php:97
+msgid "Last run failed"
+msgstr ""
+
+#: modules/widget.php:98
+msgid "Out of date"
+msgstr ""
+
+#: modules/widget.php:99
+msgid "Result not recorded"
+msgstr ""
+
+#: modules/widget.php:100
+msgid "Date not trustworthy"
+msgstr ""
+
+#: modules/widget.php:105
+msgid "Unknown"
+msgstr ""
+
+#: modules/widget.php:118
+msgid "not the live site"
+msgstr ""
+
+#: modules/widget.php:125
+msgid "Firewall active"
+msgstr ""
+
+#: modules/widget.php:126
+msgid "Monitoring only"
+msgstr ""
+
+#: modules/widget.php:127
+msgid "Not activated"
+msgstr ""
+
+#: modules/widget.php:128 modules/widget.php:142
+msgid "Not installed"
+msgstr ""
+
+#: modules/widget.php:141
+msgid "Firewall protection (Patchstack)"
+msgstr ""
+
+#: modules/widget.php:147
+msgid "Central maintenance (MainWP)"
+msgstr ""
+
+#: modules/widget.php:148
+msgid "Connected"
+msgstr ""
+
+#: modules/widget.php:148
+msgid "Disconnected"
+msgstr ""
+
+#: modules/widget.php:153
+msgid "Latest backup"
+msgstr ""
+
+#: modules/widget.php:159
+msgid "Object cache"
+msgstr ""
+
+#: modules/widget.php:160
+msgid "Active"
+msgstr ""
+
+#: modules/widget.php:160
+msgid "Not in use"
+msgstr ""
+
+#: modules/widget.php:163
+msgid "Server runtime"
+msgstr ""
+
+#: modules/widget.php:167
+msgid "MainWP security ID"
+msgstr ""
+
+#: modules/widget.php:168
+msgid "Not set"
+msgstr ""
+
+#: modules/widget.php:185
+msgid "Need assistance or site changes?"
+msgstr ""
+
+#: modules/widget.php:186
+msgid "This site is maintained by Marginal."
+msgstr ""
+
+#: modules/widget.php:190
+msgid "Contact support"
+msgstr ""
+
+#: modules/widget.php:214
+msgid "Marginal — site care and protection"
+msgstr ""
+
+#. translators: %s: the maintained-by link, already built and escaped.
+#: modules/white-label.php:30
+msgid "Maintained and managed by %s"
+msgstr ""
+
+#: modules/white-label.php:38 modules/user-guard.php:179
+msgid "Managed by Marginal"
+msgstr ""
+
+#: modules/user-guard.php:204
+msgid "This account is managed by Marginal and cannot be deleted. Contact Marginal if it needs to be removed."
+msgstr ""

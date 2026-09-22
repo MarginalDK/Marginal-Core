@@ -93,16 +93,16 @@ function marginal_core_widget_render(): void {
 	// Five non-ok states, each phrased so the row says what is actually
 	// wrong. "Unknown" alone would read as a glitch rather than a finding.
 	$backup_labels = array(
-		'missing' => 'Never run',
-		'failed'  => 'Last run failed',
-		'stale'   => 'Out of date',
-		'unknown' => 'Result not recorded',
-		'invalid' => 'Date not trustworthy',
+		'missing' => __( 'Never run', 'marginal-core' ),
+		'failed'  => __( 'Last run failed', 'marginal-core' ),
+		'stale'   => __( 'Out of date', 'marginal-core' ),
+		'unknown' => __( 'Result not recorded', 'marginal-core' ),
+		'invalid' => __( 'Date not trustworthy', 'marginal-core' ),
 	);
 
 	$backup_text = ( 'ok' === $backup_state && $facts['backup']['time'] )
 		? date_i18n( get_option( 'date_format' ), (int) $facts['backup']['time'] )
-		: ( isset( $backup_labels[ $backup_state ] ) ? $backup_labels[ $backup_state ] : 'Unknown' );
+		: ( isset( $backup_labels[ $backup_state ] ) ? $backup_labels[ $backup_state ] : __( 'Unknown', 'marginal-core' ) );
 	?>
 	<div style="font-family:system-ui,-apple-system,sans-serif;font-size:13px;color:#1e293b;">
 
@@ -115,17 +115,17 @@ function marginal_core_widget_render(): void {
 
 		<?php if ( 'production' !== $facts['environment'] ) : ?>
 			<div style="background:#fef3c7;border:1px solid #f59e0b;color:#92400e;padding:8px 10px;border-radius:6px;margin-bottom:12px;font-weight:600;">
-				<?php echo esc_html( strtoupper( $facts['environment'] ) ); ?> — not the live site
+				<?php echo esc_html( strtoupper( $facts['environment'] ) ); ?> — <?php echo esc_html__( 'not the live site', 'marginal-core' ); ?>
 			</div>
 		<?php endif; ?>
 
 		<table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
 			<?php
 			$patchstack_labels = array(
-				'protected' => 'Firewall active',
-				'monitored' => 'Monitoring only',
-				'inactive'  => 'Not activated',
-				'absent'    => 'Not installed',
+				'protected' => __( 'Firewall active', 'marginal-core' ),
+				'monitored' => __( 'Monitoring only', 'marginal-core' ),
+				'inactive'  => __( 'Not activated', 'marginal-core' ),
+				'absent'    => __( 'Not installed', 'marginal-core' ),
 			);
 
 			$patchstack_colours = array(
@@ -138,34 +138,34 @@ function marginal_core_widget_render(): void {
 			$patchstack_state = $facts['patchstack'];
 
 			echo marginal_core_widget_row(
-				'Firewall protection (Patchstack)',
-				$patchstack_labels[ $patchstack_state ] ?? 'Not installed',
+				__( 'Firewall protection (Patchstack)', 'marginal-core' ),
+				$patchstack_labels[ $patchstack_state ] ?? __( 'Not installed', 'marginal-core' ),
 				$patchstack_colours[ $patchstack_state ] ?? $red
 			);
 
 			echo marginal_core_widget_row(
-				'Central maintenance (MainWP)',
-				$facts['mainwp_connected'] ? 'Connected' : 'Disconnected',
+				__( 'Central maintenance (MainWP)', 'marginal-core' ),
+				$facts['mainwp_connected'] ? __( 'Connected', 'marginal-core' ) : __( 'Disconnected', 'marginal-core' ),
 				$facts['mainwp_connected'] ? $green : $red
 			);
 
 			echo marginal_core_widget_row(
-				'Latest backup',
+				__( 'Latest backup', 'marginal-core' ),
 				$backup_text,
 				'ok' === $backup_state ? $green : $red
 			);
 
 			echo marginal_core_widget_row(
-				'Object cache',
-				$facts['object_cache'] ? 'Active' : 'Not in use'
+				__( 'Object cache', 'marginal-core' ),
+				$facts['object_cache'] ? __( 'Active', 'marginal-core' ) : __( 'Not in use', 'marginal-core' )
 			);
 
-			echo marginal_core_widget_row( 'Server runtime', 'PHP ' . $facts['php_version'] );
+			echo marginal_core_widget_row( __( 'Server runtime', 'marginal-core' ), 'PHP ' . $facts['php_version'] );
 
 			if ( $marginal ) {
 				echo marginal_core_widget_row(
-					'MainWP security ID',
-					'' === $facts['mainwp_unique_id'] ? 'Not set' : $facts['mainwp_unique_id']
+					__( 'MainWP security ID', 'marginal-core' ),
+					'' === $facts['mainwp_unique_id'] ? __( 'Not set', 'marginal-core' ) : $facts['mainwp_unique_id']
 				);
 			}
 			?>
@@ -182,12 +182,12 @@ function marginal_core_widget_render(): void {
 		<?php endif; ?>
 
 		<div style="background:#f8fafc;padding:12px;border-radius:6px;border:1px solid #e2e8f0;">
-			<div style="font-weight:600;margin-bottom:4px;color:#0f172a;">Need assistance or site changes?</div>
-			<div style="color:#64748b;font-size:12px;margin-bottom:10px;">This site is maintained by Marginal.</div>
+			<div style="font-weight:600;margin-bottom:4px;color:#0f172a;"><?php echo esc_html__( 'Need assistance or site changes?', 'marginal-core' ); ?></div>
+			<div style="color:#64748b;font-size:12px;margin-bottom:10px;"><?php echo esc_html__( 'This site is maintained by Marginal.', 'marginal-core' ); ?></div>
 			<a href="<?php echo esc_url( (string) marginal_core_config( 'support_url', 'https://marginal.dk' ) ); ?>"
 				target="_blank" rel="noopener"
 				style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:6px 12px;border-radius:4px;font-weight:600;font-size:12px;">
-				Contact support &rarr;
+				<?php echo esc_html__( 'Contact support', 'marginal-core' ); ?> &rarr;
 			</a>
 		</div>
 	</div>
@@ -211,7 +211,7 @@ function marginal_core_widget_setup(): void {
 
 	wp_add_dashboard_widget(
 		'marginal_core_status',
-		'Marginal — site care and protection',
+		__( 'Marginal — site care and protection', 'marginal-core' ),
 		'marginal_core_widget_render'
 	);
 }

@@ -54,7 +54,6 @@ oversights:
 - Self-update independent of MainWP.
 - Per-employee accounts on client sites.
 - Any admin settings screen. Configuration is constants only.
-- Internationalisation. Strings are English; Danish is backlogged.
 
 ## Architecture
 
@@ -362,6 +361,32 @@ so a client-specific support destination is one define rather than three.
 Note for implementation: `wp-login.php` is not an admin context, so this
 module's hooks must not sit behind an `is_admin()` check.
 
+## Internationalisation
+
+Added after the initial implementation, reversing the original non-goal.
+
+The 43 user-visible strings carry the `marginal-core` text domain, loaded on
+`init` — the call is required, because WordPress only loads translations
+automatically for plugins hosted on wordpress.org. Danish is bundled as
+`languages/marginal-core-da_DK.po` with its compiled `.mo`, and
+`languages/marginal-core.pot` is the template for any further language.
+
+**The site's own language decides.** A Danish admin sees Danish, an English one
+sees English — rather than hardcoding Danish and surprising a client who runs
+their dashboard in English.
+
+Two details worth keeping if this is ever revisited:
+
+- The admin-footer string is `Maintained and managed by %s`, with the built
+  anchor passed in as the placeholder, so no translator ever edits HTML.
+- `'Every Minute'`, the cron schedule label, is deliberately NOT translated.
+  `cron_schedules` can fire before `init`, and WordPress 6.7 emits a
+  `_doing_it_wrong` notice for translations loaded that early. It is an
+  internal label visible only in debug tooling.
+
+`.mo` is used rather than the newer `.l10n.php` format, which would require
+raising the WordPress floor from 6.0 to 6.5.
+
 ## Self-update
 
 Since WordPress 5.8, core parses the `Update URI` header, extracts its
@@ -454,7 +479,6 @@ Each of these is its own module and its own decision, added only when wanted:
 - Client capability lockdown — no plugin/theme installation or deletion.
 - `DISALLOW_FILE_MODS` with a corrected IP whitelist, opt-in per site.
 - Per-employee accounts provisioned from a central roster.
-- Danish translation.
 - Authoritative environment detection for managed hosts (Pantheon, Kinsta,
   WP Engine), added per-host through the filter if one appears in the fleet.
 - Additional widget rows: backup status, uptime, SSL expiry.

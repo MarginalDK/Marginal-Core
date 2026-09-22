@@ -1,0 +1,190 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Marginal Core 0.9.0\n"
+"Report-Msgid-Bugs-To: https://github.com/MarginalDK/Marginal-Core/issues\n"
+"POT-Creation-Date: 2026-09-21T00:00:00+00:00\n"
+"PO-Revision-Date: 2026-09-21T00:00:00+00:00\n"
+"Last-Translator: Marginal <hej@marginal.dk>\n"
+"Language-Team: Marginal <hej@marginal.dk>\n"
+"Language: da_DK\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: manual\n"
+"X-Domain: marginal-core\n"
+
+#: inc/status.php:125
+msgid "Search engines are blocked from indexing this site."
+msgstr "Søgemaskiner er blokeret fra at indeksere dette website."
+
+#: inc/status.php:134
+msgid "Debug mode is on in production."
+msgstr "Fejlfinding (debug) er slået til i produktion."
+
+#. translators: %s: the detected environment name (e.g. "staging").
+#: inc/status.php:145
+msgid "This is the %s environment, not the live site."
+msgstr "Dette er %s-miljøet, ikke det live website."
+
+#: inc/status.php:154
+msgid "No backups have been recorded for this site."
+msgstr "Der er ikke registreret nogen backup for dette website."
+
+#: inc/status.php:155
+msgid "The most recent backup did not complete."
+msgstr "Den seneste backup blev ikke gennemført."
+
+#: inc/status.php:156
+msgid "The most recent backup is older than expected."
+msgstr "Den seneste backup er ældre end forventet."
+
+#: inc/status.php:157
+msgid "The most recent backup did not record whether it succeeded."
+msgstr "Den seneste backup registrerede ikke, om den lykkedes."
+
+#: inc/status.php:158
+msgid "The most recent backup is dated in the future, so its age cannot be trusted."
+msgstr "Den seneste backup er dateret i fremtiden, så dens alder ikke kan bruges."
+
+#: inc/status.php:186
+msgid "The MainWP security ID contains unsafe characters. Correct it in MainWP's own settings on this child site, then update the value stored on the Marginal dashboard to match."
+msgstr "MainWP-sikkerheds-ID'et indeholder ugyldige tegn. Ret det i MainWP's egne indstillinger på dette child-site, og opdatér derefter værdien på Marginal-dashboardet, så de stemmer."
+
+#: inc/status.php:187
+msgid "The MainWP security ID contains unsafe characters and the site is disconnected. Correct it in MainWP's own settings on this child site, then update the value stored on the Marginal dashboard to match."
+msgstr "MainWP-sikkerheds-ID'et indeholder ugyldige tegn, og websitet er ikke forbundet. Ret det i MainWP's egne indstillinger på dette child-site, og opdatér derefter værdien på Marginal-dashboardet, så de stemmer."
+
+#: inc/status.php:196
+msgid "WP_ENVIRONMENT_TYPE is not set, so this site reports as production whether it is or not."
+msgstr "WP_ENVIRONMENT_TYPE er ikke angivet, så websitet rapporterer sig som produktion, uanset om det er det."
+
+#: inc/status.php:232
+msgid "Everything looks good"
+msgstr "Alt ser fint ud"
+
+#: inc/status.php:236
+msgid "1 item needs attention"
+msgstr "1 punkt kræver opmærksomhed"
+
+#. translators: %d: number of warnings the widget is showing.
+#: inc/status.php:237
+msgid "%d items need attention"
+msgstr "%d punkter kræver opmærksomhed"
+
+#: modules/widget.php:96
+msgid "Never run"
+msgstr "Aldrig kørt"
+
+#: modules/widget.php:97
+msgid "Last run failed"
+msgstr "Seneste kørsel fejlede"
+
+#: modules/widget.php:98
+msgid "Out of date"
+msgstr "Forældet"
+
+#: modules/widget.php:99
+msgid "Result not recorded"
+msgstr "Resultat ikke registreret"
+
+#: modules/widget.php:100
+msgid "Date not trustworthy"
+msgstr "Dato er ikke troværdig"
+
+#: modules/widget.php:105
+msgid "Unknown"
+msgstr "Ukendt"
+
+#: modules/widget.php:118
+msgid "not the live site"
+msgstr "ikke det live website"
+
+#: modules/widget.php:125
+msgid "Firewall active"
+msgstr "Firewall aktiv"
+
+#: modules/widget.php:126
+msgid "Monitoring only"
+msgstr "Kun overvågning"
+
+#: modules/widget.php:127
+msgid "Not activated"
+msgstr "Ikke aktiveret"
+
+#: modules/widget.php:128 modules/widget.php:142
+msgid "Not installed"
+msgstr "Ikke installeret"
+
+#: modules/widget.php:141
+msgid "Firewall protection (Patchstack)"
+msgstr "Firewall-beskyttelse (Patchstack)"
+
+#: modules/widget.php:147
+msgid "Central maintenance (MainWP)"
+msgstr "Central vedligeholdelse (MainWP)"
+
+#: modules/widget.php:148
+msgid "Connected"
+msgstr "Forbundet"
+
+#: modules/widget.php:148
+msgid "Disconnected"
+msgstr "Ikke forbundet"
+
+#: modules/widget.php:153
+msgid "Latest backup"
+msgstr "Seneste backup"
+
+#: modules/widget.php:159
+msgid "Object cache"
+msgstr "Object cache"
+
+#: modules/widget.php:160
+msgid "Active"
+msgstr "Aktiv"
+
+#: modules/widget.php:160
+msgid "Not in use"
+msgstr "Ikke i brug"
+
+#: modules/widget.php:163
+msgid "Server runtime"
+msgstr "Servermiljø"
+
+#: modules/widget.php:167
+msgid "MainWP security ID"
+msgstr "MainWP sikkerheds-ID"
+
+#: modules/widget.php:168
+msgid "Not set"
+msgstr "Ikke angivet"
+
+#: modules/widget.php:185
+msgid "Need assistance or site changes?"
+msgstr "Brug for hjælp eller ændringer?"
+
+#: modules/widget.php:186
+msgid "This site is maintained by Marginal."
+msgstr "Dette website vedligeholdes af Marginal."
+
+#: modules/widget.php:190
+msgid "Contact support"
+msgstr "Kontakt support"
+
+#: modules/widget.php:214
+msgid "Marginal — site care and protection"
+msgstr "Marginal — drift og sikkerhed"
+
+#. translators: %s: the maintained-by link, already built and escaped.
+#: modules/white-label.php:30
+msgid "Maintained and managed by %s"
+msgstr "Vedligeholdes og driftes af %s"
+
+#: modules/white-label.php:38 modules/user-guard.php:179
+msgid "Managed by Marginal"
+msgstr "Administreret af Marginal"
+
+#: modules/user-guard.php:204
+msgid "This account is managed by Marginal and cannot be deleted. Contact Marginal if it needs to be removed."
+msgstr "Denne konto administreres af Marginal og kan ikke slettes. Kontakt Marginal, hvis den skal fjernes."

@@ -196,6 +196,32 @@ if ( ! function_exists( 'esc_url' ) ) {
 	}
 }
 
+/*
+ * Translation stubs, identity functions like the rest of this file. Real
+ * WordPress would look the string up against the loaded text domain; the
+ * suite has no domain loaded and asserts against the English source text
+ * directly, so returning the argument unchanged is the correct stand-in
+ * rather than a simplification that happens to work.
+ */
+
+if ( ! function_exists( '__' ) ) {
+	function __( string $text, string $domain = 'default' ): string {
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'esc_html__' ) ) {
+	function esc_html__( string $text, string $domain = 'default' ): string {
+		return esc_html( $text );
+	}
+}
+
+if ( ! function_exists( 'esc_attr__' ) ) {
+	function esc_attr__( string $text, string $domain = 'default' ): string {
+		return $text;
+	}
+}
+
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../inc/config.php';
 require_once __DIR__ . '/../inc/modules.php';
